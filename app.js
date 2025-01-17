@@ -10,7 +10,7 @@ const port = 5000;
 app.use(bodyParser.json());
 
 // Facebook API 配置
-const FB_API_URL = `https://graph.facebook.com/v13.0/${process.env.FACEBOOK_APP_ID}/app_events`;
+const FB_API_URL = `https://graph.facebook.com/v21.0/${process.env.FACEBOOK_PIXEL_ID}/events`;
 const ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
 
 // 接收参数并调用 Jenkins 接口
@@ -449,5 +449,5 @@ app.post('/customize_product', async (req, res) => {
 
 // 启动服务器
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running on http://0.0.0.0:${port}`);
 });
