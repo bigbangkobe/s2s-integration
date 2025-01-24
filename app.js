@@ -85,65 +85,77 @@ app.get('/trigger-build', async (req, res) => {
             }
         );
 
-        const buildNumber = response.data;
+        // 获取响应头中的 Location 字段，这个字段包含了构建号的 URL
+        const locationHeader = response.headers['location'];
+        if (locationHeader) {
+            // 从 URL 中提取构建号
+            const buildNumber = locationHeader.split('/').pop();  // 从 URL 中提取构建号
+            console.log('Build Number:', buildNumber);
 
-        async function checkBuildStatus() {
-            try {
-                // 获取 Jenkins 构建状态
-                const buildStatusResponse = await axios.get(
-                    `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
-                    {
-                        auth: {
-                            username: 'cpGo',
-                            password: '11967113e707e73e25d451037e620af67e'  // 用你的API token替代
+            async function checkBuildStatus() {
+                try {
+                    // 获取 Jenkins 构建状态
+                    const buildStatusResponse = await axios.get(
+                        `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
+                        {
+                            auth: {
+                                username: 'cpGo',
+                                password: '11967113e707e73e25d451037e620af67e'  // 用你的API token替代
+                            }
                         }
+                    );
+
+                    const buildStatus = buildStatusResponse.data;
+                    const progress = {
+                        building: buildStatus.building,
+                        stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
+                        progressPercentage: buildStatus.progress || 0,
+                        url: buildStatus.url,
+                        status: buildStatus.result || "In Progress"
+                    };
+
+                    // 如果连接的 WebSocket 存在，发送进度给特定用户
+                    if (userConnections[sessionId] && userConnections[sessionId].readyState === WebSocket.OPEN) {
+                        userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
                     }
-                );
 
-                const buildStatus = buildStatusResponse.data;
-                const progress = {
-                    building: buildStatus.building,
-                    stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
-                    progressPercentage: buildStatus.progress || 0,
-                    url: buildStatus.url,
-                    status: buildStatus.result || "In Progress"
-                };
+                    if (buildStatus.building) {
+                        setTimeout(checkBuildStatus, 1000);  // 每 1 秒查询一次
+                    } else {
+                        console.log(`Build completed with status: ${buildStatus.result}`);
+                        const downloadUrl = buildStatus.description;
+                        userConnections[sessionId]?.send(JSON.stringify({
+                            status: 'success',
+                            message: 'Build completed',
+                            build: {
+                                buildNumber: buildNumber,
+                                progress: progress.status,
+                                downloadUrl: downloadUrl,
+                                buildUrl: buildStatus.url
+                            }
+                        }));
+                    }
 
-                // 如果连接的 WebSocket 存在，发送进度给特定用户
-                if (userConnections[sessionId] && userConnections[sessionId].readyState === WebSocket.OPEN) {
-                    userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
-                }
-
-                if (buildStatus.building) {
-                    setTimeout(checkBuildStatus, 1000);  // 每 1 秒查询一次
-                } else {
-                    console.log(`Build completed with status: ${buildStatus.result}`);
-                    const downloadUrl = buildStatus.description;
-                    userConnections[sessionId]?.send(JSON.stringify({
-                        status: 'success',
-                        message: 'Build completed',
-                        build: {
-                            buildNumber: buildNumber,
-                            progress: progress.status,
-                            downloadUrl: downloadUrl,
-                            buildUrl: buildStatus.url
-                        }
-                    }));
-                }
-
-            } catch (error) {
-                console.error('Error fetching build status:', error);
-                if (userConnections[sessionId]) {
-                    userConnections[sessionId].send(JSON.stringify({
-                        status: 'failure',
-                        message: 'Error querying Jenkins build status.',
-                        error: error.message
-                    }));
+                } catch (error) {
+                    console.error('Error fetching build status:', error);
+                    if (userConnections[sessionId]) {
+                        userConnections[sessionId].send(JSON.stringify({
+                            status: 'failure',
+                            message: 'Error querying Jenkins build status.',
+                            error: error.message
+                        }));
+                    }
                 }
             }
-        }
 
-        checkBuildStatus();
+            checkBuildStatus();
+
+        } else {
+            res.status(500).json({
+                status: 'failure',
+                message: 'Unable to retrieve build location URL.',
+            });
+        }
 
     } catch (error) {
         res.status(500).json({
@@ -153,6 +165,7 @@ app.get('/trigger-build', async (req, res) => {
         });
     }
 });
+
 
 const { exec } = require('child_process');
 
