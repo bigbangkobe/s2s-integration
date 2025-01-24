@@ -165,6 +165,7 @@ app.get('/trigger-build', async (req, res) => {
             );
 
             const buildStatus = buildStatusResponse.data;
+            console.log('Build Status:', JSON.stringify(buildStatus, null, 2));  // 格式化并打印数据
             const progress = {
                 building: buildStatus.building,
                 stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
