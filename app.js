@@ -331,10 +331,6 @@ app.post('/lead', async (req, res) => {
 //自定义事件
 app.post('/customevent', async (req, res) => {
     const { email, phone, ip, userAgent, fbp, fbc, eventName, customData, productUrl } = req.body;
-
-    console.log('Received event name:', eventName);
-    console.log('Received custom data:', customData);
-
     const currentTimestamp = Math.floor(new Date() / 1000);
 
     // 校验传入的事件名称和自定义数据
@@ -350,8 +346,12 @@ app.post('/customevent', async (req, res) => {
         .setFbp(fbp)
         .setFbc(fbc);
 
+    // 直接设置 customData 的字段
     const customDataObj = new bizSdk.CustomData()
-        .setData(customData);  // 假设 customData 是一个对象，包含事件相关数据
+        .setCurrency(customData.currency)  // 设置货币类型
+        .setValue(customData.value)  // 设置商品的价值
+        .setContents(customData.content_ids.map(id => new bizSdk.Content().setId(id).setQuantity(1))) // 设置内容（例如产品ID）
+        .setContentType(customData.content_type); // 设置内容类型（例如 "product"）
 
     const serverEvent = new bizSdk.ServerEvent()
         .setEventName(eventName)
