@@ -78,8 +78,8 @@ app.get('/trigger-build', async (req, res) => {
                 }
             }
         );
-        // console.log(`API Response: ${JSON.stringify(response.data, null, 2)}`);  // 将响应数据转换为 JSON 格式并打印出来
-        buildNumber = response.data.nextBuildNumber;  // 获取最新的构建号
+        console.log(`API Response: ${JSON.stringify(response.data, null, 2)}`);  // 将响应数据转换为 JSON 格式并打印出来
+        // buildNumber = response.data.nextBuildNumber;  // 获取最新的构建号
         console.log(`Current build number: ${buildNumber}`);
     } catch (error) {
         console.error('Error fetching build number:', error);
