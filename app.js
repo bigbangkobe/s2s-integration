@@ -4,7 +4,6 @@ const bodyParser = require('body-parser');
 const bizSdk = require('facebook-nodejs-business-sdk');
 const crypto = require('crypto');
 const cors = require('cors');
-app.use(cors());
 
 require('dotenv').config();  // 加载环境变量
 
@@ -13,6 +12,7 @@ const port = 5000;
 
 // 使用 body-parser 解析 JSON 格式的请求体
 app.use(bodyParser.json());
+app.use(cors());
 
 // Facebook API 配置
 const FB_API_URL = `https://graph.facebook.com/v21.0/${process.env.FACEBOOK_PIXEL_ID}/events`;
