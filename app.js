@@ -163,6 +163,7 @@ app.get('/trigger-build', async (req, res) => {
                     }
                 }
             );
+            const buildStatus = buildStatusResponse.data;
 
            // 获取 duration 和 estimatedDuration
             const duration = buildStatus.duration || 0;  // 如果没有设置 duration，则默认为 0
