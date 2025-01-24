@@ -113,7 +113,7 @@ app.get('/trigger-build', async (req, res) => {
         return;
     }
 
-    async function checkQueueStatus(progressPercentage) {
+    async function checkQueueStatus() {
         try {
             // 查询队列项的状态
             const queueItemResponse = await axios.get(
@@ -132,31 +132,11 @@ app.get('/trigger-build', async (req, res) => {
             if (queueItem.executable) {
                 const buildNumber = queueItem.executable.number;  // 获取构建号
                 console.log(`Build started with build number: ${buildNumber}`);
-                checkBuildStatus(buildNumber, progressPercentage);  // 开始轮询构建状态
+                checkBuildStatus(buildNumber);  // 开始轮询构建状态
             } else {
                 // 如果构建还没有开始，继续查询队列项状态
                 console.log('Build is still in the queue...');
-                progressPercentage += 5;
-                const progress = {
-                    building: true,
-                    stage: "Unknown",
-                    progressPercentage: progressPercentage,
-                    url: "",
-                    status: "In Progress"
-                };
-                // 如果连接的 WebSocket 存在，发送进度给特定用户
-                if (userConnections[sessionId] && userConnections[sessionId].readyState === WebSocket.OPEN) {
-                    console.log('准备发送进度:', progress);  // 输出即将发送的数据
-                    try {
-                        userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
-                        console.log('进度已发送:', progress);  // 输出已发送的数据
-                    } catch (error) {
-                        console.error('发送进度时发生错误:', error);  // 如果发送时发生错误，输出错误信息
-                    }
-                } else {
-                    console.log(`WebSocket 连接不存在或未准备好，sessionId: ${sessionId}`);
-                }
-                setTimeout(() => checkQueueStatus(progressPercentage), 1000);  // 每 1 秒查询一次队列项状态
+                setTimeout(checkQueueStatus, 1000);  // 每 1 秒查询一次队列项状态
             }
 
         } catch (error) {
@@ -172,7 +152,7 @@ app.get('/trigger-build', async (req, res) => {
     }
 
     // 获取构建状态
-    async function checkBuildStatus(buildNumber, progressPercentage) {
+    async function checkBuildStatus(buildNumber) {
         try {
             const buildStatusResponse = await axios.get(
                 `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
@@ -183,15 +163,13 @@ app.get('/trigger-build', async (req, res) => {
                     }
                 }
             );
+
             const buildStatus = buildStatusResponse.data;
-            progressPercentage += 5;
-            // 打印 progressPercentage
-            console.log('Progress Percentage:', progressPercentage);  // 打印进度百分比
 
             const progress = {
                 building: buildStatus.building,
                 stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
-                progressPercentage: progressPercentage,
+                progressPercentage: buildStatus.progress || 0,
                 url: buildStatus.url,
                 status: buildStatus.result || "In Progress"
             };
@@ -211,7 +189,7 @@ app.get('/trigger-build', async (req, res) => {
 
 
             if (buildStatus.building) {
-                setTimeout(() => checkBuildStatus(buildNumber, progressPercentage), 1000);  // 每 1 秒查询一次
+                setTimeout(() => checkBuildStatus(buildNumber), 1000);  // 每 1 秒查询一次
             } else {
                 console.log(`Build completed with status: ${buildStatus.result}`);
                 const downloadUrl = buildStatus.description;
@@ -240,7 +218,7 @@ app.get('/trigger-build', async (req, res) => {
     }
 
     // 初始化查询队列状态
-    checkQueueStatus(0);
+    checkQueueStatus();
 });
 
 
