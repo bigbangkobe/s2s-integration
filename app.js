@@ -3,6 +3,9 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 const bizSdk = require('facebook-nodejs-business-sdk');
 const crypto = require('crypto');
+const cors = require('cors');
+app.use(cors());
+
 require('dotenv').config();  // 加载环境变量
 
 const app = express();
