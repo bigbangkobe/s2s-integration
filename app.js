@@ -91,7 +91,8 @@ app.get('/trigger-build', async (req, res) => {
         const locationHeader = response.headers['location'];
         console.log(locationHeader);  // 打印 location 头部值
         if (locationHeader) {
-            const queueId = locationHeader.split('/').pop();  // 提取队列项 ID
+            // 使用 split 分割 URL，获取倒数第二个元素作为队列项 ID
+            const queueId = locationHeader.split('/').slice(-2, -1)[0];
             queueItemId = queueId;
             console.log('Queue Item ID:', queueItemId);
         } else {
