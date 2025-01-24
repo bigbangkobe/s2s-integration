@@ -24,16 +24,15 @@ app.get('/trigger-build', async (req, res) => {
     }
 
     try {
-        // 在这里处理Jenkins构建触发逻辑
+        // 触发 Jenkins 构建
         const response = await axios.post(
-            'http://naturich.top/:8080/job/NaturichProst/buildWithParameters',
+            'http://naturich.top:8080/job/NaturichProst/buildWithParameters',
             null,
             {
                 params: {
                     URL: url,
                     FBC: fbc
                 },
-                // 其他必要的头部和身份验证信息
                 auth: {
                     username: 'cpGo',
                     password: '11967113e707e73e25d451037e620af67e' // 用你的API token替代
@@ -41,9 +40,65 @@ app.get('/trigger-build', async (req, res) => {
             }
         );
 
-        res.json({ status: 'success', message: 'Build triggered successfully' });
+        const buildNumber = response.data;  // 获取构建号
+
+        // 定义轮询函数
+        async function checkBuildStatus() {
+            try {
+                // 查询构建状态
+                const buildStatusResponse = await axios.get(
+                    `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
+                    {
+                        auth: {
+                            username: 'cpGo',
+                            password: '11967113e707e73e25d451037e620af67e' // 用你的API token替代
+                        }
+                    }
+                );
+
+                const buildStatus = buildStatusResponse.data;
+
+                // 获取构建进度
+                const progress = {
+                    building: buildStatus.building,
+                    stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
+                    progressPercentage: buildStatus.progress || 0,
+                    url: buildStatus.url,
+                    status: buildStatus.result || "In Progress"
+                };
+
+                // 如果构建还在进行中，继续轮询
+                if (buildStatus.building) {
+                    console.log(`Build in progress: ${progress.progressPercentage}%`);
+                    setTimeout(checkBuildStatus, 5000);  // 每5秒查询一次
+                } else {
+                    console.log(`Build completed with status: ${buildStatus.result}`);
+                    res.json({
+                        status: 'success',
+                        message: 'Build completed',
+                        build: progress
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error fetching build status:', error);
+                res.status(500).json({
+                    status: 'failure',
+                    message: 'Error querying Jenkins build status.',
+                    error: error.message
+                });
+            }
+        }
+
+        // 初始化轮询
+        checkBuildStatus();
+
     } catch (error) {
-        res.status(500).json({ status: 'failure', message: 'Error triggering Jenkins build.', error: error.message });
+        res.status(500).json({
+            status: 'failure',
+            message: 'Error triggering Jenkins build.',
+            error: error.message
+        });
     }
 });
 
