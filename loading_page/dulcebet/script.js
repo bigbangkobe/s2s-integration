@@ -14,7 +14,7 @@ document.getElementById('downloadButton').addEventListener('click', async () => 
         return;
     }
     // 建立 WebSocket 连接，并携带会话ID
-    const socket = new WebSocket(`wss://naturich.top:5001?sessionId=${sessionId}`);  // 将会话ID作为查询参数传递
+    const socket = new WebSocket(`wss://naturich.top:5000?sessionId=${sessionId}`);  // 将会话ID作为查询参数传递
     // 显示加载进度
     document.getElementById('loadingOverlay').style.display = 'flex';
     document.getElementById('progressContainer').style.display = 'block';

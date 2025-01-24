@@ -40,8 +40,10 @@ app.get('/generate-session-id', (req, res) => {
     res.json({ sessionId });
 });
 
-// 启动 WebSocket 服务
-const wss = new WebSocket.Server({ port: 5001 });
+// 创建 HTTPS 服务器
+const server = https.createServer(options, app);
+// 启动 WebSocket 服务器并绑定到 HTTPS 服务器
+const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws, req) => {
     const sessionId = new URLSearchParams(req.url.split('?')[1]).get('sessionId');  // 假设用户 ID 会作为查询参数传递
@@ -488,6 +490,6 @@ function hashData(data) {
 //     console.log(`Server is running on http://0.0.0.0:${port}`);
 // });
 // 创建 HTTPS 服务器并监听 443 端口
-https.createServer(options, app).listen(port, () => {
+server.listen(port, () => {
     console.log(`Server is running on http://0.0.0.0:${port}`);
 });
