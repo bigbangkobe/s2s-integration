@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Store Clone</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-card">
+            <h2 class="app-title">My Awesome App</h2>
+            <p class="app-description">The best app for all your needs!</p>
+            <button id="downloadButton">Download</button>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Building...</p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div id="progressContainer" class="progress-container" style="display: none;">
+        <div id="progressBar" class="progress-bar"></div>
+        <span id="progressText">0%</span>
+    </div>
+
+    <!-- Download URL Section -->
+    <div id="downloadSection" class="download-section" style="display: none;">
+        <p>Your APK is ready! <a id="downloadLink" href="#">Click here to download</a></p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

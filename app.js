@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const cors = require('cors');
 const https = require('https');
 const fs = require('fs');
+const WebSocket = require('ws');
 
 require('dotenv').config();  // 加载环境变量
 
@@ -25,12 +26,43 @@ const options = {
     //ca: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/ca_bundle.crt') // 如果有 CA Bundle，指定路径
 };
 
-// 接收参数并调用 Jenkins 接口
-app.get('/trigger-build', async (req, res) => {
-    const { url, fbc } = req.query;
+// 提供静态文件
+app.use(express.static(path.join(__dirname, 'public')));
 
-    if (!url || !fbc) {
-        return res.status(400).json({ status: 'failure', message: 'Both URL and FBC are required.' });
+// 接收参数并调用 Jenkins 接口
+let userConnections = {};  // 存储用户 WebSocket 连接的映射
+let sessionIdCounter = 1;  // 用于生成递增的会话 ID
+
+// 定义一个生成会话 ID 的接口
+app.get('/generate-session-id', (req, res) => {
+    const sessionId = sessionIdCounter++;  // 获取当前的会话 ID 并自增
+    res.json({ sessionId });
+});
+
+// 启动 WebSocket 服务
+const wss = new WebSocket.Server({ port: 5001 });
+
+wss.on('connection', (ws, req) => {
+    const userId = new URLSearchParams(req.url.split('?')[1]).get('userId');  // 假设用户 ID 会作为查询参数传递
+
+    console.log(`User connected: ${userId}`);
+    
+    // 保存用户连接
+    userConnections[userId] = ws;
+
+    ws.on('close', () => {
+        console.log(`User disconnected: ${userId}`);
+        // 移除用户连接
+        delete userConnections[userId];
+    });
+});
+
+// 触发 Jenkins 构建接口
+app.get('/trigger-build', async (req, res) => {
+    const { url, fbc, userId, sessionId } = req.query;
+
+    if (!url || !fbc || !userId || !sessionId) {
+        return res.status(400).json({ status: 'failure', message: 'URL, FBC, userId, and sessionId are required.' });
     }
 
     try {
@@ -45,30 +77,27 @@ app.get('/trigger-build', async (req, res) => {
                 },
                 auth: {
                     username: 'cpGo',
-                    password: '11967113e707e73e25d451037e620af67e' // 用你的API token替代
+                    password: '11967113e707e73e25d451037e620af67e'  // 用你的API token替代
                 },
             }
         );
 
-        const buildNumber = response.data;  // 获取构建号
+        const buildNumber = response.data;
 
-        // 定义轮询函数
         async function checkBuildStatus() {
             try {
-                // 查询构建状态
+                // 获取 Jenkins 构建状态
                 const buildStatusResponse = await axios.get(
                     `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
                     {
                         auth: {
                             username: 'cpGo',
-                            password: '11967113e707e73e25d451037e620af67e' // 用你的API token替代
+                            password: '11967113e707e73e25d451037e620af67e'  // 用你的API token替代
                         }
                     }
                 );
 
                 const buildStatus = buildStatusResponse.data;
-
-                // 获取构建进度
                 const progress = {
                     building: buildStatus.building,
                     stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
@@ -77,30 +106,40 @@ app.get('/trigger-build', async (req, res) => {
                     status: buildStatus.result || "In Progress"
                 };
 
-                // 如果构建还在进行中，继续轮询
+                // 如果连接的 WebSocket 存在，发送进度给特定用户
+                if (userConnections[userId] && userConnections[userId].readyState === WebSocket.OPEN) {
+                    userConnections[userId].send(JSON.stringify(progress));  // 发送进度
+                }
+
                 if (buildStatus.building) {
-                    console.log(`Build in progress: ${progress.progressPercentage}%`);
-                    setTimeout(checkBuildStatus, 5000);  // 每5秒查询一次
+                    setTimeout(checkBuildStatus, 1000);  // 每 1 秒查询一次
                 } else {
                     console.log(`Build completed with status: ${buildStatus.result}`);
-                    res.json({
+                    const downloadUrl = buildStatus.description;
+                    userConnections[userId]?.send(JSON.stringify({
                         status: 'success',
                         message: 'Build completed',
-                        build: progress
-                    });
+                        build: {
+                            buildNumber: buildNumber,
+                            progress: progress.status,
+                            downloadUrl: downloadUrl,
+                            buildUrl: buildStatus.url
+                        }
+                    }));
                 }
 
             } catch (error) {
                 console.error('Error fetching build status:', error);
-                res.status(500).json({
-                    status: 'failure',
-                    message: 'Error querying Jenkins build status.',
-                    error: error.message
-                });
+                if (userConnections[userId]) {
+                    userConnections[userId].send(JSON.stringify({
+                        status: 'failure',
+                        message: 'Error querying Jenkins build status.',
+                        error: error.message
+                    }));
+                }
             }
         }
 
-        // 初始化轮询
         checkBuildStatus();
 
     } catch (error) {
@@ -111,8 +150,6 @@ app.get('/trigger-build', async (req, res) => {
         });
     }
 });
-
-
 
 const { exec } = require('child_process');
 
