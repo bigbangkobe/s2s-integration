@@ -61,36 +61,17 @@ wss.on('connection', (ws, req) => {
 });
 
 // 触发 Jenkins 构建接口
+// 触发 Jenkins 构建接口
 app.get('/trigger-build', async (req, res) => {
     const { url, fbc, sessionId } = req.query;
 
     if (!url || !fbc || !sessionId) {
         return res.status(400).json({ status: 'failure', message: 'URL, FBC, and sessionId are required.' });
     }
+
     let buildNumber = 0;
     try {
-        const response = await axios.get(
-            'http://naturich.top:8080/job/NaturichProst/api/json',  // 获取 Jenkins Job 信息
-            {
-                auth: {
-                    username: 'cpGo',
-                    password: '11967113e707e73e25d451037e620af67e'  // 用你的 API token 替代
-                }
-            }
-        );
-        // console.log(`API Response: ${JSON.stringify(response.data, null, 2)}`);  // 将响应数据转换为 JSON 格式并打印出来
-        buildNumber = response.data.nextBuildNumber;  // 获取最新的构建号
-        console.log(`Current build number: ${buildNumber}`);
-    } catch (error) {
-        console.error('Error fetching build number:', error);
-        res.status(500).json({
-            status: 'failure',
-            message: 'Error querying Jenkins build number.',
-            error: error.message
-        });
-    }
-    try {
-        // 触发 Jenkins 构建
+        // 获取 Jenkins Job 信息
         const response = await axios.post(
             'http://naturich.top:8080/job/NaturichProst/buildWithParameters',
             null,
@@ -101,89 +82,94 @@ app.get('/trigger-build', async (req, res) => {
                 },
                 auth: {
                     username: 'cpGo',
-                    password: '11967113e707e73e25d451037e620af67e'  // 用你的API token替代
-                },
+                    password: '11967113e707e73e25d451037e620af67e'  // 用你的 API token 替代
+                }
             }
         );
-        console.log('获取版本号:' + buildNumber);
-        async function checkBuildStatus() {
-            try {
-                // 获取 Jenkins 构建状态
-                const buildStatusResponse = await axios.get(
-                    `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
-                    {
-                        auth: {
-                            username: 'cpGo',
-                            password: '11967113e707e73e25d451037e620af67e'  // 用你的API token替代
-                        }
-                    }
-                );
 
-                const buildStatus = buildStatusResponse.data;
-                const progress = {
-                    building: buildStatus.building,
-                    stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
-                    progressPercentage: buildStatus.progress || 0,
-                    url: buildStatus.url,
-                    status: buildStatus.result || "In Progress"
-                };
-
-                // 如果连接的 WebSocket 存在，发送进度给特定用户
-                if (userConnections[sessionId] && userConnections[sessionId].readyState === WebSocket.OPEN) {
-                    userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
-                }
-
-                if (buildStatus.building) {
-                    setTimeout(checkBuildStatus, 1000);  // 每 1 秒查询一次
-                } else {
-                    console.log(`Build completed with status: ${buildStatus.result}`);
-                    const downloadUrl = buildStatus.description;
-                    userConnections[sessionId]?.send(JSON.stringify({
-                        status: 'success',
-                        message: 'Build completed',
-                        build: {
-                            buildNumber: buildNumber,
-                            progress: progress.status,
-                            downloadUrl: downloadUrl,
-                            buildUrl: buildStatus.url
-                        }
-                    }));
-                }
-
-            } catch (error) {
-                console.error('Error fetching build status:', error);
-                if (userConnections[sessionId]) {
-                    userConnections[sessionId].send(JSON.stringify({
-                        status: 'failure',
-                        message: 'Error querying Jenkins build status.',
-                        error: error.message
-                    }));
-                }
-            }
+        // 获取响应头中的 Location 字段，这个字段包含了当前构建号的 URL
+        const locationHeader = response.headers['location'];
+        if (locationHeader) {
+            // 从 URL 中提取构建号
+            buildNumber = locationHeader.split('/').pop();  // 从 URL 中提取构建号
+            console.log('Current build number:', buildNumber);
+        } else {
+            res.status(500).json({
+                status: 'failure',
+                message: 'Unable to retrieve build location URL.',
+            });
+            return;
         }
 
-        checkBuildStatus();
-        // // 获取响应头中的 Location 字段，这个字段包含了构建号的 URL
-        // const locationHeader = response.headers['location'];
-        // if (locationHeader) {
-        //     // 从 URL 中提取构建号
-        //     const buildNumber = locationHeader.split('/').pop();  // 从 URL 中提取构建号
-        //     console.log('Build Number:', buildNumber);
-        // } else {
-        //     res.status(500).json({
-        //         status: 'failure',
-        //         message: 'Unable to retrieve build location URL.',
-        //     });
-        // }
-
     } catch (error) {
+        console.error('Error fetching build number:', error);
         res.status(500).json({
             status: 'failure',
             message: 'Error triggering Jenkins build.',
             error: error.message
         });
+        return;
     }
+
+    async function checkBuildStatus() {
+        try {
+            // 获取 Jenkins 构建状态
+            const buildStatusResponse = await axios.get(
+                `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
+                {
+                    auth: {
+                        username: 'cpGo',
+                        password: '11967113e707e73e25d451037e620af67e'  // 用你的 API token 替代
+                    }
+                }
+            );
+
+            const buildStatus = buildStatusResponse.data;
+            const progress = {
+                building: buildStatus.building,
+                stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
+                progressPercentage: buildStatus.progress || 0,
+                url: buildStatus.url,
+                status: buildStatus.result || "In Progress"
+            };
+
+            // 如果连接的 WebSocket 存在，发送进度给特定用户
+            if (userConnections[sessionId] && userConnections[sessionId].readyState === WebSocket.OPEN) {
+                userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
+            }
+
+            if (buildStatus.building) {
+                setTimeout(checkBuildStatus, 1000);  // 每 1 秒查询一次
+            } else {
+                console.log(`Build completed with status: ${buildStatus.result}`);
+                const downloadUrl = buildStatus.description;
+                userConnections[sessionId]?.send(JSON.stringify({
+                    status: 'success',
+                    message: 'Build completed',
+                    build: {
+                        buildNumber: buildNumber,
+                        progress: progress.status,
+                        downloadUrl: downloadUrl,
+                        buildUrl: buildStatus.url
+                    }
+                }));
+            }
+
+        } catch (error) {
+            console.error('Error fetching build status:', error);
+            if (userConnections[sessionId]) {
+                userConnections[sessionId].send(JSON.stringify({
+                    status: 'failure',
+                    message: 'Error querying Jenkins build status.',
+                    error: error.message
+                }));
+            }
+        }
+    }
+
+    checkBuildStatus();
 });
+
 
 
 const { exec } = require('child_process');
