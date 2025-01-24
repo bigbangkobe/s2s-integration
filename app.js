@@ -61,7 +61,6 @@ wss.on('connection', (ws, req) => {
 });
 
 // 触发 Jenkins 构建接口
-// 触发 Jenkins 构建接口
 app.get('/trigger-build', async (req, res) => {
     const { url, fbc, sessionId } = req.query;
 
@@ -69,9 +68,10 @@ app.get('/trigger-build', async (req, res) => {
         return res.status(400).json({ status: 'failure', message: 'URL, FBC, and sessionId are required.' });
     }
 
-    let buildNumber = 0;
+    let queueItemId = 0;  // 用来存储队列项 ID
+
     try {
-        // 获取 Jenkins Job 信息
+        // 触发 Jenkins 构建请求并获取队列项 ID
         const response = await axios.post(
             'http://naturich.top:8080/job/NaturichProst/buildWithParameters',
             null,
@@ -87,22 +87,22 @@ app.get('/trigger-build', async (req, res) => {
             }
         );
 
-        // 获取响应头中的 Location 字段，这个字段包含了当前构建号的 URL
+        // 从响应头获取队列项 ID
         const locationHeader = response.headers['location'];
         if (locationHeader) {
-            // 从 URL 中提取构建号
-            buildNumber = locationHeader.split('/').pop();  // 从 URL 中提取构建号
-            console.log('Current build number:', buildNumber);
+            const queueId = locationHeader.split('/').pop();  // 提取队列项 ID
+            queueItemId = queueId;
+            console.log('Queue Item ID:', queueItemId);
         } else {
             res.status(500).json({
                 status: 'failure',
-                message: 'Unable to retrieve build location URL.',
+                message: 'Unable to retrieve queue item location URL.'
             });
             return;
         }
 
     } catch (error) {
-        console.error('Error fetching build number:', error);
+        console.error('Error triggering Jenkins build:', error);
         res.status(500).json({
             status: 'failure',
             message: 'Error triggering Jenkins build.',
@@ -111,9 +111,47 @@ app.get('/trigger-build', async (req, res) => {
         return;
     }
 
-    async function checkBuildStatus() {
+    async function checkQueueStatus() {
         try {
-            // 获取 Jenkins 构建状态
+            // 查询队列项的状态
+            const queueItemResponse = await axios.get(
+                `http://naturich.top:8080/queue/item/${queueItemId}/api/json`,
+                {
+                    auth: {
+                        username: 'cpGo',
+                        password: '11967113e707e73e25d451037e620af67e'  // 用你的 API token 替代
+                    }
+                }
+            );
+
+            const queueItem = queueItemResponse.data;
+
+            // 如果队列项有可执行项（executable），说明构建已经开始
+            if (queueItem.executable) {
+                const buildNumber = queueItem.executable.number;  // 获取构建号
+                console.log(`Build started with build number: ${buildNumber}`);
+                checkBuildStatus(buildNumber);  // 开始轮询构建状态
+            } else {
+                // 如果构建还没有开始，继续查询队列项状态
+                console.log('Build is still in the queue...');
+                setTimeout(checkQueueStatus, 1000);  // 每 1 秒查询一次队列项状态
+            }
+
+        } catch (error) {
+            console.error('Error fetching queue status:', error);
+            if (userConnections[sessionId]) {
+                userConnections[sessionId].send(JSON.stringify({
+                    status: 'failure',
+                    message: 'Error querying Jenkins queue status.',
+                    error: error.message
+                }));
+            }
+        }
+    }
+
+    // 获取构建状态
+    async function checkBuildStatus(buildNumber) {
+        try {
             const buildStatusResponse = await axios.get(
                 `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
                 {
@@ -139,7 +177,7 @@ app.get('/trigger-build', async (req, res) => {
             }
 
             if (buildStatus.building) {
-                setTimeout(checkBuildStatus, 1000);  // 每 1 秒查询一次
+                setTimeout(() => checkBuildStatus(buildNumber), 1000);  // 每 1 秒查询一次
             } else {
                 console.log(`Build completed with status: ${buildStatus.result}`);
                 const downloadUrl = buildStatus.description;
@@ -167,8 +205,10 @@ app.get('/trigger-build', async (req, res) => {
         }
     }
 
-    checkBuildStatus();
+    // 初始化查询队列状态
+    checkQueueStatus();
 });
+
 
 
 
