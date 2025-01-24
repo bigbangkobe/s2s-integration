@@ -67,7 +67,7 @@ app.get('/trigger-build', async (req, res) => {
     if (!url || !fbc || !sessionId) {
         return res.status(400).json({ status: 'failure', message: 'URL, FBC, and sessionId are required.' });
     }
-    const buildNumber = 0;
+    let buildNumber = 0;
     try {
         const response = await axios.get(
             'http://naturich.top:8080/job/NaturichProst/api/json',  // 获取 Jenkins Job 信息
