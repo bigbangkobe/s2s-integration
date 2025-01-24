@@ -89,26 +89,28 @@ app.post('/purchase', async (req, res) => {
 
     let current_timestamp = Math.floor(new Date() / 1000);
 
+    // 从请求参数中获取数据
+    const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, currency, value, productUrl } = req.body;
+
     // 获取用户数据
     const userData = (new UserData())
-        .setEmails([hashData('joe@eg.com')])
-        .setPhones([hashData('12345678901'), hashData('14251234567')])
-        // It is recommended to send Client IP and User Agent for Conversions API Events.
-        .setClientIpAddress(req.ip)  // 使用req而不是request
-        .setClientUserAgent(req.headers['user-agent'])      // 使用req而不是request
-        .setFbp('fb.1.1558571054389.1098115397')
-        .setFbc('fb.1.1554763741205.AbCdEfGhIjKlMnOpQrStUvWxYz1234567890');
+        .setEmails([hashData(email)]) // 从请求参数获取邮件
+        .setPhones(phone.map(num => hashData(num))) // 从请求参数获取电话号码
+        .setClientIpAddress(ip)  // 从请求参数获取客户端IP地址
+        .setClientUserAgent(userAgent) // 从请求参数获取客户端User-Agent
+        .setFbp(fbp)  // 从请求参数获取 FBP
+        .setFbc(fbc);  // 从请求参数获取 FBC
 
     // 商品数据
     const content = (new Content())
-        .setId('product123')
-        .setQuantity(1)
+        .setId(productId) // 从请求参数获取商品ID
+        .setQuantity(quantity) // 从请求参数获取商品数量
         .setDeliveryCategory(DeliveryCategory.HOME_DELIVERY);
 
     const customData = (new CustomData())
         .setContents([content])
-        .setCurrency('usd')
-        .setValue(123.45);
+        .setCurrency(currency) // 从请求参数获取货币类型
+        .setValue(value); // 从请求参数获取商品价值
 
     // 创建事件
     const serverEvent = (new ServerEvent())
@@ -116,7 +118,7 @@ app.post('/purchase', async (req, res) => {
         .setEventTime(current_timestamp)
         .setUserData(userData)
         .setCustomData(customData)
-        .setEventSourceUrl('http://jaspers-market.com/product/123')
+        .setEventSourceUrl(productUrl) // 从请求参数获取产品URL
         .setActionSource('website');
 
     const eventsData = [serverEvent];
@@ -134,359 +136,239 @@ app.post('/purchase', async (req, res) => {
     }
 });
 
-
-// 应用安装事件
-app.post('/app_install', async (req, res) => {
-    const { external_id, device_id, platform } = req.body;
-    if (!external_id || !device_id || !platform) {
-        return res.status(400).json({ error: "external_id, device_id, and platform are required" });
-    }
-
-    const eventData = {
-        event_name: "INSTALL",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending install event.' });
-    }
-});
-
-// 应用激活事件
-app.post('/app_activate', async (req, res) => {
-    const { external_id, device_id, platform } = req.body;
-    if (!external_id || !device_id || !platform) {
-        return res.status(400).json({ error: "external_id, device_id, and platform are required" });
-    }
-
-    const eventData = {
-        event_name: "ACTIVATE",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending activate event.' });
-    }
-});
-
-
-// 添加到购物车事件
-app.post('/add_to_cart', async (req, res) => {
-    const { external_id, device_id, platform, content_ids, value, currency } = req.body;
-    if (!external_id || !device_id || !platform || !content_ids || !value || !currency) {
-        return res.status(400).json({ error: "external_id, device_id, platform, content_ids, value, and currency are required" });
-    }
-
-    const eventData = {
-        event_name: "ADD_TO_CART",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-        content_ids: content_ids,
-        value_to_sum: value,
-        currency: currency,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending add to cart event.' });
-    }
-});
-
-// 添加到愿望单事件
-app.post('/add_to_wishlist', async (req, res) => {
-    const { external_id, device_id, platform, content_ids, currency } = req.body;
-    if (!external_id || !device_id || !platform || !content_ids || !currency) {
-        return res.status(400).json({ error: "external_id, device_id, platform, content_ids, and currency are required" });
-    }
-
-    const eventData = {
-        event_name: "ADD_TO_WISHLIST",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-        content_ids: content_ids,
-        currency: currency,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending add to wishlist event.' });
-    }
-});
-
-// 开始结账事件
-app.post('/initiate_checkout', async (req, res) => {
-    const { external_id, device_id, platform, value, currency } = req.body;
-    if (!external_id || !device_id || !platform || !value || !currency) {
-        return res.status(400).json({ error: "external_id, device_id, platform, value, and currency are required" });
-    }
-
-    const eventData = {
-        event_name: "INITIATE_CHECKOUT",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-        value_to_sum: value,
-        currency: currency,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending initiate checkout event.' });
-    }
-});
-
-// 搜索事件
-app.post('/search', async (req, res) => {
-    const { external_id, device_id, platform, search_string } = req.body;
-    if (!external_id || !device_id || !platform || !search_string) {
-        return res.status(400).json({ error: "external_id, device_id, platform, and search_string are required" });
-    }
-
-    const eventData = {
-        event_name: "SEARCH",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-        search_string: search_string,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending search event.' });
-    }
-});
-
 // 查看内容事件
-app.post('/view_content', async (req, res) => {
-    const { external_id, device_id, platform, content_ids } = req.body;
-    if (!external_id || !device_id || !platform || !content_ids) {
-        return res.status(400).json({ error: "external_id, device_id, platform, and content_ids are required" });
-    }
+app.post('/viewcontent', async (req, res) => {
+    const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl } = req.body;
+    const currentTimestamp = Math.floor(new Date() / 1000);
 
-    const eventData = {
-        event_name: "VIEW_CONTENT",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-        content_ids: content_ids,
-    };
+    const userData = new bizSdk.UserData()
+        .setEmails([hashData(email)])
+        .setPhones(phone.map(num => hashData(num)))
+        .setClientIpAddress(ip)
+        .setClientUserAgent(userAgent)
+        .setFbp(fbp)
+        .setFbc(fbc);
+
+    const content = new bizSdk.Content()
+        .setId(productId);
+
+    const customData = new bizSdk.CustomData()
+        .setContents([content]);
+
+    const serverEvent = new bizSdk.ServerEvent()
+        .setEventName('ViewContent')
+        .setEventTime(currentTimestamp)
+        .setUserData(userData)
+        .setCustomData(customData)
+        .setEventSourceUrl(productUrl)
+        .setActionSource('website');
+
+    const eventsData = [serverEvent];
+    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        .setEvents(eventsData);
 
     try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending view content event.' });
+        const response = await eventRequest.execute();
+        res.json({ status: 'Event sent to Facebook', response });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
     }
 });
 
-// 完成注册事件
-app.post('/complete_registration', async (req, res) => {
-    const { external_id, device_id, platform } = req.body;
-    if (!external_id || !device_id || !platform) {
-        return res.status(400).json({ error: "external_id, device_id, and platform are required" });
-    }
+//添加到购物车事件
+app.post('/addtocart', async (req, res) => {
+    const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, productUrl } = req.body;
+    const currentTimestamp = Math.floor(new Date() / 1000);
 
-    const eventData = {
-        event_name: "COMPLETE_REGISTRATION",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-    };
+    const userData = new bizSdk.UserData()
+        .setEmails([hashData(email)])
+        .setPhones(phone.map(num => hashData(num)))
+        .setClientIpAddress(ip)
+        .setClientUserAgent(userAgent)
+        .setFbp(fbp)
+        .setFbc(fbc);
+
+    const content = new bizSdk.Content()
+        .setId(productId)
+        .setQuantity(quantity);
+
+    const customData = new bizSdk.CustomData()
+        .setContents([content]);
+
+    const serverEvent = new bizSdk.ServerEvent()
+        .setEventName('AddToCart')
+        .setEventTime(currentTimestamp)
+        .setUserData(userData)
+        .setCustomData(customData)
+        .setEventSourceUrl(productUrl)
+        .setActionSource('website');
+
+    const eventsData = [serverEvent];
+    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        .setEvents(eventsData);
 
     try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending complete registration event.' });
+        const response = await eventRequest.execute();
+        res.json({ status: 'Event sent to Facebook', response });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
     }
 });
 
-// 潜在客户事件
+//添加到愿望清单事件
+app.post('/addtowishlist', async (req, res) => {
+    const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl } = req.body;
+    const currentTimestamp = Math.floor(new Date() / 1000);
+
+    const userData = new bizSdk.UserData()
+        .setEmails([hashData(email)])
+        .setPhones(phone.map(num => hashData(num)))
+        .setClientIpAddress(ip)
+        .setClientUserAgent(userAgent)
+        .setFbp(fbp)
+        .setFbc(fbc);
+
+    const content = new bizSdk.Content()
+        .setId(productId);
+
+    const customData = new bizSdk.CustomData()
+        .setContents([content]);
+
+    const serverEvent = new bizSdk.ServerEvent()
+        .setEventName('AddToWishlist')
+        .setEventTime(currentTimestamp)
+        .setUserData(userData)
+        .setCustomData(customData)
+        .setEventSourceUrl(productUrl)
+        .setActionSource('website');
+
+    const eventsData = [serverEvent];
+    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        .setEvents(eventsData);
+
+    try {
+        const response = await eventRequest.execute();
+        res.json({ status: 'Event sent to Facebook', response });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
+    }
+});
+
+//开始结账事件
+app.post('/initiatecheckout', async (req, res) => {
+    const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, value, currency, productUrl } = req.body;
+    const currentTimestamp = Math.floor(new Date() / 1000);
+
+    const userData = new bizSdk.UserData()
+        .setEmails([hashData(email)])
+        .setPhones(phone.map(num => hashData(num)))
+        .setClientIpAddress(ip)
+        .setClientUserAgent(userAgent)
+        .setFbp(fbp)
+        .setFbc(fbc);
+
+    const content = new bizSdk.Content()
+        .setId(productId)
+        .setQuantity(quantity);
+
+    const customData = new bizSdk.CustomData()
+        .setContents([content])
+        .setValue(value)
+        .setCurrency(currency);
+
+    const serverEvent = new bizSdk.ServerEvent()
+        .setEventName('InitiateCheckout')
+        .setEventTime(currentTimestamp)
+        .setUserData(userData)
+        .setCustomData(customData)
+        .setEventSourceUrl(productUrl)
+        .setActionSource('website');
+
+    const eventsData = [serverEvent];
+    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        .setEvents(eventsData);
+
+    try {
+        const response = await eventRequest.execute();
+        res.json({ status: 'Event sent to Facebook', response });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
+    }
+});
+
+//潜在客户事件
 app.post('/lead', async (req, res) => {
-    const { external_id, device_id, platform } = req.body;
-    if (!external_id || !device_id || !platform) {
-        return res.status(400).json({ error: "external_id, device_id, and platform are required" });
-    }
+    const { email, phone, ip, userAgent, fbp, fbc, leadUrl } = req.body;
+    const currentTimestamp = Math.floor(new Date() / 1000);
 
-    const eventData = {
-        event_name: "LEAD",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-    };
+    const userData = new bizSdk.UserData()
+        .setEmails([hashData(email)])
+        .setPhones(phone.map(num => hashData(num)))
+        .setClientIpAddress(ip)
+        .setClientUserAgent(userAgent)
+        .setFbp(fbp)
+        .setFbc(fbc);
+
+    const serverEvent = new bizSdk.ServerEvent()
+        .setEventName('Lead')
+        .setEventTime(currentTimestamp)
+        .setUserData(userData)
+        .setEventSourceUrl(leadUrl)
+        .setActionSource('website');
+
+    const eventsData = [serverEvent];
+    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        .setEvents(eventsData);
 
     try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending lead event.' });
+        const response = await eventRequest.execute();
+        res.json({ status: 'Event sent to Facebook', response });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
     }
 });
 
-// 安排事件
-app.post('/schedule', async (req, res) => {
-    const { external_id, device_id, platform } = req.body;
-    if (!external_id || !device_id || !platform) {
-        return res.status(400).json({ error: "external_id, device_id, and platform are required" });
+//自定义事件
+app.post('/customevent', async (req, res) => {
+    const { email, phone, ip, userAgent, fbp, fbc, eventName, customData, productUrl } = req.body;
+    const currentTimestamp = Math.floor(new Date() / 1000);
+
+    // 校验传入的事件名称和自定义数据
+    if (!eventName || !customData) {
+        return res.status(400).json({ error: 'Event name and custom data are required' });
     }
 
-    const eventData = {
-        event_name: "SCHEDULE",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-    };
+    const userData = new bizSdk.UserData()
+        .setEmails([hashData(email)])
+        .setPhones(phone.map(num => hashData(num)))
+        .setClientIpAddress(ip)
+        .setClientUserAgent(userAgent)
+        .setFbp(fbp)
+        .setFbc(fbc);
+
+    const customDataObj = new bizSdk.CustomData()
+        .setData(customData);  // 假设 customData 是一个对象，包含事件相关数据
+
+    const serverEvent = new bizSdk.ServerEvent()
+        .setEventName(eventName)
+        .setEventTime(currentTimestamp)
+        .setUserData(userData)
+        .setCustomData(customDataObj)
+        .setEventSourceUrl(productUrl)
+        .setActionSource('website');
+
+    const eventsData = [serverEvent];
+    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        .setEvents(eventsData);
 
     try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending schedule event.' });
+        const response = await eventRequest.execute();
+        res.json({ status: 'Event sent to Facebook', response });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send custom event to Facebook', details: err });
     }
 });
 
-// 提交申请事件
-app.post('/submit_application', async (req, res) => {
-    const { external_id, device_id, platform } = req.body;
-    if (!external_id || !device_id || !platform) {
-        return res.status(400).json({ error: "external_id, device_id, and platform are required" });
-    }
-
-    const eventData = {
-        event_name: "SUBMIT_APPLICATION",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending submit application event.' });
-    }
-});
-
-// 订阅事件
-app.post('/subscribe', async (req, res) => {
-    const { external_id, device_id, platform } = req.body;
-    if (!external_id || !device_id || !platform) {
-        return res.status(400).json({ error: "external_id, device_id, and platform are required" });
-    }
-
-    const eventData = {
-        event_name: "SUBSCRIBE",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending subscribe event.' });
-    }
-});
-
-// 自定义产品事件
-app.post('/customize_product', async (req, res) => {
-    const { external_id, device_id, platform, content_ids } = req.body;
-    if (!external_id || !device_id || !platform || !content_ids) {
-        return res.status(400).json({ error: "external_id, device_id, platform, and content_ids are required" });
-    }
-
-    const eventData = {
-        event_name: "CUSTOMIZE_PRODUCT",
-        user_data: {
-            external_id,
-            device_id,
-        },
-        event_time: Math.floor(Date.now() / 1000),
-        app_version: "1.0.0",
-        platform: platform,
-        content_ids: content_ids,
-    };
-
-    try {
-        const fbResponse = await sendEventToFacebook(eventData);
-        return res.json({ status: 'success', response: fbResponse });
-    } catch (error) {
-        return res.status(500).json({ status: 'failure', message: 'Error sending customize product event.' });
-    }
-});
-
-function hashData(data) {
-    return crypto.createHash('sha256').update(data).digest('hex');
-  }
 
 // 启动服务器
 app.listen(port, () => {
