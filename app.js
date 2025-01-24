@@ -79,7 +79,7 @@ app.get('/trigger-build', async (req, res) => {
             }
         );
 
-        const buildNumber = response.data.lastBuild.number;  // 获取最新的构建号
+        buildNumber = response.data.lastBuild.number;  // 获取最新的构建号
         console.log(`Current build number: ${buildNumber}`);
     } catch (error) {
         console.error('Error fetching build number:', error);
