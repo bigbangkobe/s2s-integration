@@ -331,6 +331,10 @@ app.post('/lead', async (req, res) => {
 //自定义事件
 app.post('/customevent', async (req, res) => {
     const { email, phone, ip, userAgent, fbp, fbc, eventName, customData, productUrl } = req.body;
+
+    console.log('Received event name:', eventName);
+    console.log('Received custom data:', customData);
+
     const currentTimestamp = Math.floor(new Date() / 1000);
 
     // 校验传入的事件名称和自定义数据
@@ -368,6 +372,7 @@ app.post('/customevent', async (req, res) => {
         res.status(500).json({ error: 'Failed to send custom event to Facebook', details: err });
     }
 });
+
 
 // 哈希函数，用于哈希化数据
 function hashData(data) {
