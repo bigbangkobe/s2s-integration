@@ -88,7 +88,8 @@ app.get('/trigger-build', async (req, res) => {
         );
 
         // 从响应头获取队列项 ID
-        const locationHeader = response.headers['Location'];
+        const locationHeader = response.headers['location'];
+        console.log(locationHeader);  // 打印 location 头部值
         if (locationHeader) {
             const queueId = locationHeader.split('/').pop();  // 提取队列项 ID
             queueItemId = queueId;
