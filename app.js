@@ -60,10 +60,10 @@ wss.on('connection', (ws, req) => {
 
 // 触发 Jenkins 构建接口
 app.get('/trigger-build', async (req, res) => {
-    const { url, fbc, userId, sessionId } = req.query;
+    const { url, fbc, sessionId } = req.query;
 
-    if (!url || !fbc || !userId || !sessionId) {
-        return res.status(400).json({ status: 'failure', message: 'URL, FBC, userId, and sessionId are required.' });
+    if (!url || !fbc || !sessionId) {
+        return res.status(400).json({ status: 'failure', message: 'URL, FBC, and sessionId are required.' });
     }
 
     try {
@@ -108,8 +108,8 @@ app.get('/trigger-build', async (req, res) => {
                 };
 
                 // 如果连接的 WebSocket 存在，发送进度给特定用户
-                if (userConnections[userId] && userConnections[userId].readyState === WebSocket.OPEN) {
-                    userConnections[userId].send(JSON.stringify(progress));  // 发送进度
+                if (userConnections[sessionId] && userConnections[sessionId].readyState === WebSocket.OPEN) {
+                    userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
                 }
 
                 if (buildStatus.building) {

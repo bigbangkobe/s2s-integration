@@ -1,7 +1,6 @@
 document.getElementById('downloadButton').addEventListener('click', async () => {
     const url = 'https://www.example.com';  // 你可以动态获取或用户输入
     const fbc = '456';  // 你可以动态获取或用户输入
-    const userId = 'user123';  // 假设你能从用户会话中获取用户ID
 
     // 获取会话 ID
     let sessionId = null;
@@ -21,14 +20,14 @@ document.getElementById('downloadButton').addEventListener('click', async () => 
 
     try {
         // 发送请求到后端，触发 Jenkins 打包，并传递会话ID
-        const response = await fetch(`https://naturich.top:5000/trigger-build?url=${url}&fbc=${fbc}&userId=${userId}&sessionId=${sessionId}`);
+        const response = await fetch(`https://naturich.top:5000/trigger-build?url=${url}&fbc=${fbc}&sessionId=${sessionId}`);
         const data = await response.json();
 
         if (data.status === 'success') {
             const buildNumber = data.build.buildNumber;
 
             // 建立 WebSocket 连接，并携带会话ID
-            const socket = new WebSocket(`ws://naturich.top:5001?userId=${userId}`);  // 将会话ID作为查询参数传递
+            const socket = new WebSocket(`ws://naturich.top:5001?sessionId=${sessionId}`);  // 将会话ID作为查询参数传递
 
             socket.onopen = () => {
                 console.log('WebSocket connected');
