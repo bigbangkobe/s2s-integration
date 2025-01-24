@@ -27,7 +27,7 @@ const options = {
 };
 
 // 提供静态文件
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'loading_page')));
 
 // 接收参数并调用 Jenkins 接口
 let userConnections = {};  // 存储用户 WebSocket 连接的映射
