@@ -7,6 +7,7 @@ const cors = require('cors');
 const https = require('https');
 const fs = require('fs');
 const WebSocket = require('ws');
+const path = require('path');  // 导入 path 模块
 
 require('dotenv').config();  // 加载环境变量
 
