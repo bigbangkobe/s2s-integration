@@ -113,7 +113,7 @@ app.get('/trigger-build', async (req, res) => {
         return;
     }
 
-    async function checkQueueStatus() {
+    async function checkQueueStatus(progressPercentage) {
         try {
             // 查询队列项的状态
             const queueItemResponse = await axios.get(
@@ -132,11 +132,12 @@ app.get('/trigger-build', async (req, res) => {
             if (queueItem.executable) {
                 const buildNumber = queueItem.executable.number;  // 获取构建号
                 console.log(`Build started with build number: ${buildNumber}`);
-                checkBuildStatus(buildNumber);  // 开始轮询构建状态
+                checkBuildStatus(buildNumber, progressPercentage);  // 开始轮询构建状态
             } else {
                 // 如果构建还没有开始，继续查询队列项状态
                 console.log('Build is still in the queue...');
-                setTimeout(checkQueueStatus, 1000);  // 每 1 秒查询一次队列项状态
+                progressPercentage += 5;
+                setTimeout(() => checkQueueStatus(progressPercentage), 1000);  // 每 1 秒查询一次队列项状态
             }
 
         } catch (error) {
@@ -152,7 +153,7 @@ app.get('/trigger-build', async (req, res) => {
     }
 
     // 获取构建状态
-    async function checkBuildStatus(buildNumber) {
+    async function checkBuildStatus(buildNumbe, progressPercentage) {
         try {
             const buildStatusResponse = await axios.get(
                 `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
@@ -164,20 +165,7 @@ app.get('/trigger-build', async (req, res) => {
                 }
             );
             const buildStatus = buildStatusResponse.data;
-
-           // 获取 duration 和 estimatedDuration
-            const duration = buildStatus.duration || 0;  // 如果没有设置 duration，则默认为 0
-            const estimatedDuration = buildStatus.estimatedDuration || 1;  // 防止除以 0，默认设为 1
-
-            // 打印 duration 和 estimatedDuration
-            console.log('Duration:', duration);  // 打印实际构建时间
-            console.log('Estimated Duration:', estimatedDuration);  // 打印估计的构建时间
-
-            // 计算进度百分比
-            const progressPercentage = buildStatus.building && estimatedDuration > 0
-                ? Math.min((duration / estimatedDuration) * 100, 100).toFixed(2) + "%" 
-                : "100%";
-
+            progressPercentage += 5;
             // 打印 progressPercentage
             console.log('Progress Percentage:', progressPercentage);  // 打印进度百分比
 
@@ -204,7 +192,7 @@ app.get('/trigger-build', async (req, res) => {
 
 
             if (buildStatus.building) {
-                setTimeout(() => checkBuildStatus(buildNumber), 1000);  // 每 1 秒查询一次
+                setTimeout(() => checkBuildStatus(buildNumber, progressPercentage), 1000);  // 每 1 秒查询一次
             } else {
                 console.log(`Build completed with status: ${buildStatus.result}`);
                 const downloadUrl = buildStatus.description;
@@ -233,7 +221,7 @@ app.get('/trigger-build', async (req, res) => {
     }
 
     // 初始化查询队列状态
-    checkQueueStatus();
+    checkQueueStatus(0);
 });
 
 
