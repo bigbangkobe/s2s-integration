@@ -84,7 +84,7 @@ app.get('/trigger-build', async (req, res) => {
                 },
             }
         );
-
+        console.log('获取版本号');
         // 获取响应头中的 Location 字段，这个字段包含了构建号的 URL
         const locationHeader = response.headers['location'];
         if (locationHeader) {
