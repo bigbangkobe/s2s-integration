@@ -5,6 +5,7 @@ const bizSdk = require('facebook-nodejs-business-sdk');
 const crypto = require('crypto');
 const cors = require('cors');
 const https = require('https');
+const fs = require('fs');
 
 require('dotenv').config();  // 加载环境变量
 
