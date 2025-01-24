@@ -137,6 +137,25 @@ app.get('/trigger-build', async (req, res) => {
                 // 如果构建还没有开始，继续查询队列项状态
                 console.log('Build is still in the queue...');
                 progressPercentage += 5;
+                const progress = {
+                    building: true,
+                    stage: "Unknown",
+                    progressPercentage: progressPercentage,
+                    url: "",
+                    status: "In Progress"
+                };
+                // 如果连接的 WebSocket 存在，发送进度给特定用户
+                if (userConnections[sessionId] && userConnections[sessionId].readyState === WebSocket.OPEN) {
+                    console.log('准备发送进度:', progress);  // 输出即将发送的数据
+                    try {
+                        userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
+                        console.log('进度已发送:', progress);  // 输出已发送的数据
+                    } catch (error) {
+                        console.error('发送进度时发生错误:', error);  // 如果发送时发生错误，输出错误信息
+                    }
+                } else {
+                    console.log(`WebSocket 连接不存在或未准备好，sessionId: ${sessionId}`);
+                }
                 setTimeout(() => checkQueueStatus(progressPercentage), 1000);  // 每 1 秒查询一次队列项状态
             }
 
@@ -153,7 +172,7 @@ app.get('/trigger-build', async (req, res) => {
     }
 
     // 获取构建状态
-    async function checkBuildStatus(buildNumbe, progressPercentage) {
+    async function checkBuildStatus(buildNumber, progressPercentage) {
         try {
             const buildStatusResponse = await axios.get(
                 `http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`,
