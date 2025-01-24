@@ -44,17 +44,17 @@ app.get('/generate-session-id', (req, res) => {
 const wss = new WebSocket.Server({ port: 5001 });
 
 wss.on('connection', (ws, req) => {
-    const userId = new URLSearchParams(req.url.split('?')[1]).get('userId');  // 假设用户 ID 会作为查询参数传递
+    const sessionId = new URLSearchParams(req.url.split('?')[1]).get('sessionId');  // 假设用户 ID 会作为查询参数传递
 
-    console.log(`User connected: ${userId}`);
+    console.log(`User connected: ${sessionId}`);
     
     // 保存用户连接
-    userConnections[userId] = ws;
+    userConnections[sessionId] = ws;
 
     ws.on('close', () => {
-        console.log(`User disconnected: ${userId}`);
+        console.log(`User disconnected: ${sessionId}`);
         // 移除用户连接
-        delete userConnections[userId];
+        delete userConnections[sessionId];
     });
 });
 
@@ -117,7 +117,7 @@ app.get('/trigger-build', async (req, res) => {
                 } else {
                     console.log(`Build completed with status: ${buildStatus.result}`);
                     const downloadUrl = buildStatus.description;
-                    userConnections[userId]?.send(JSON.stringify({
+                    userConnections[sessionId]?.send(JSON.stringify({
                         status: 'success',
                         message: 'Build completed',
                         build: {
@@ -131,8 +131,8 @@ app.get('/trigger-build', async (req, res) => {
 
             } catch (error) {
                 console.error('Error fetching build status:', error);
-                if (userConnections[userId]) {
-                    userConnections[userId].send(JSON.stringify({
+                if (userConnections[sessionId]) {
+                    userConnections[sessionId].send(JSON.stringify({
                         status: 'failure',
                         message: 'Error querying Jenkins build status.',
                         error: error.message
