@@ -13,12 +13,14 @@ document.getElementById('downloadButton').addEventListener('click', async () => 
         alert('Failed to generate session ID.');
         return;
     }
-
+    // 建立 WebSocket 连接，并携带会话ID
+    const socket = new WebSocket(`ws://naturich.top:5001?sessionId=${sessionId}`);  // 将会话ID作为查询参数传递
     // 显示加载进度
     document.getElementById('loadingOverlay').style.display = 'flex';
     document.getElementById('progressContainer').style.display = 'block';
 
     try {
+
         // 发送请求到后端，触发 Jenkins 打包，并传递会话ID
         const response = await fetch(`https://naturich.top:5000/trigger-build?url=${url}&fbc=${fbc}&sessionId=${sessionId}`);
         const data = await response.json();
@@ -26,8 +28,7 @@ document.getElementById('downloadButton').addEventListener('click', async () => 
         if (data.status === 'success') {
             const buildNumber = data.build.buildNumber;
 
-            // 建立 WebSocket 连接，并携带会话ID
-            const socket = new WebSocket(`ws://naturich.top:5001?sessionId=${sessionId}`);  // 将会话ID作为查询参数传递
+    
 
             socket.onopen = () => {
                 console.log('WebSocket connected');
