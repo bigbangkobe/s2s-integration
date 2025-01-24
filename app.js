@@ -105,7 +105,6 @@ app.get('/trigger-build', async (req, res) => {
                 },
             }
         );
-        buildNumber++;
         console.log('获取版本号:' + buildNumber);
         async function checkBuildStatus() {
             try {
