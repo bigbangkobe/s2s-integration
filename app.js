@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const bizSdk = require('facebook-nodejs-business-sdk');
 const crypto = require('crypto');
 const cors = require('cors');
+const https = require('https');
 
 require('dotenv').config();  // 加载环境变量
 
@@ -16,7 +17,12 @@ app.use(cors());
 
 // Facebook API 配置
 const FB_API_URL = `https://graph.facebook.com/v21.0/${process.env.FACEBOOK_PIXEL_ID}/events`;
-
+// 加载 SSL 证书和私钥
+const options = {
+    key: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/naturich.top.key'), // 私钥文件路径
+    cert: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/naturich.top.pem'), // 证书文件路径
+    //ca: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/ca_bundle.crt') // 如果有 CA Bundle，指定路径
+};
 
 // 接收参数并调用 Jenkins 接口
 app.get('/trigger-build', async (req, res) => {
@@ -439,6 +445,10 @@ function hashData(data) {
 
 
 // 启动服务器
-app.listen(port, () => {
+// app.listen(options,port, () => {
+//     console.log(`Server is running on http://0.0.0.0:${port}`);
+// });
+// 创建 HTTPS 服务器并监听 443 端口
+https.createServer(options, app).listen(port, () => {
     console.log(`Server is running on http://0.0.0.0:${port}`);
 });
