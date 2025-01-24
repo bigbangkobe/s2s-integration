@@ -164,11 +164,22 @@ app.get('/trigger-build', async (req, res) => {
                 }
             );
 
-            const buildStatus = buildStatusResponse.data;
-            // console.log('Build Status:', JSON.stringify(buildStatus, null, 2));  // 格式化并打印数据
-            const progressPercentage = buildStatus.building 
-                ? Math.min((buildStatus.duration / buildStatus.estimatedDuration) * 100, 100).toFixed(2) + "%" 
+           // 获取 duration 和 estimatedDuration
+            const duration = buildStatus.duration || 0;  // 如果没有设置 duration，则默认为 0
+            const estimatedDuration = buildStatus.estimatedDuration || 1;  // 防止除以 0，默认设为 1
+
+            // 打印 duration 和 estimatedDuration
+            console.log('Duration:', duration);  // 打印实际构建时间
+            console.log('Estimated Duration:', estimatedDuration);  // 打印估计的构建时间
+
+            // 计算进度百分比
+            const progressPercentage = buildStatus.building && estimatedDuration > 0
+                ? Math.min((duration / estimatedDuration) * 100, 100).toFixed(2) + "%" 
                 : "100%";
+
+            // 打印 progressPercentage
+            console.log('Progress Percentage:', progressPercentage);  // 打印进度百分比
+
             const progress = {
                 building: buildStatus.building,
                 stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
