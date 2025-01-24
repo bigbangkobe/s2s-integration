@@ -369,6 +369,11 @@ app.post('/customevent', async (req, res) => {
     }
 });
 
+// 哈希函数，用于哈希化数据
+function hashData(data) {
+    return crypto.createHash('sha256').update(data).digest('hex');
+}
+
 
 // 启动服务器
 app.listen(port, () => {
