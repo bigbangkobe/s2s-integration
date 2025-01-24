@@ -165,11 +165,14 @@ app.get('/trigger-build', async (req, res) => {
             );
 
             const buildStatus = buildStatusResponse.data;
-            console.log('Build Status:', JSON.stringify(buildStatus, null, 2));  // 格式化并打印数据
+            // console.log('Build Status:', JSON.stringify(buildStatus, null, 2));  // 格式化并打印数据
+            const progressPercentage = buildStatus.building 
+                ? Math.min((buildStatus.duration / buildStatus.estimatedDuration) * 100, 100).toFixed(2) + "%" 
+                : "100%";
             const progress = {
                 building: buildStatus.building,
                 stage: buildStatus.actions?.[0]?.parameters?.[0]?.value || "Unknown",
-                progressPercentage: buildStatus.progress || 0,
+                progressPercentage: progressPercentage,
                 url: buildStatus.url,
                 status: buildStatus.result || "In Progress"
             };
