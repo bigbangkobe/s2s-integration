@@ -175,8 +175,17 @@ app.get('/trigger-build', async (req, res) => {
 
             // 如果连接的 WebSocket 存在，发送进度给特定用户
             if (userConnections[sessionId] && userConnections[sessionId].readyState === WebSocket.OPEN) {
-                userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
+                console.log('准备发送进度:', progress);  // 输出即将发送的数据
+                try {
+                    userConnections[sessionId].send(JSON.stringify(progress));  // 发送进度
+                    console.log('进度已发送:', progress);  // 输出已发送的数据
+                } catch (error) {
+                    console.error('发送进度时发生错误:', error);  // 如果发送时发生错误，输出错误信息
+                }
+            } else {
+                console.log(`WebSocket 连接不存在或未准备好，sessionId: ${sessionId}`);
             }
+
 
             if (buildStatus.building) {
                 setTimeout(() => checkBuildStatus(buildNumber), 1000);  // 每 1 秒查询一次
