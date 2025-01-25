@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 发送请求触发 Jenkins 构建
             const response = await fetch("https://naturich.top/jenkins/job/NaturichProst/buildWithParameters", {
                 method: "POST",
+                mode: "no-cors",
                 headers: {
                     "Authorization": "Basic " + btoa("cpGo:11967113e707e73e25d451037e620af67e"),
                     "Content-Type": "application/json"
@@ -61,6 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
         while (!buildNumber) {
             await delay(1000); // 每1秒轮询
             const response = await fetch(`https://naturich.top/jenkins/queue/item/${queueId}/api/json`, {
+                mode: "no-cors",
                 headers: {
                     "Authorization": "Basic " + btoa("cpGo:11967113e707e73e25d451037e620af67e")
                 }
@@ -82,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
         while (!buildComplete) {
             await delay(1000); // 每1秒轮询
             const response = await fetch(`https://naturich.top/jenkins/job/NaturichProst/${buildNumber}/api/json`, {
+                mode: "no-cors",
                 headers: {
                     "Authorization": "Basic " + btoa("username:api_token")
                 }
