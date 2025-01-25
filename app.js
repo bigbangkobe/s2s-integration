@@ -16,13 +16,7 @@ const port = 5000;
 
 // 使用 body-parser 解析 JSON 格式的请求体
 app.use(bodyParser.json());
-app.use(cors({
-    origin: 'https://naturich.top:5000',  // 允许的前端来源
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type'],
-    credentials: true
-}));
-
+app.use(cors());
 
 // Facebook API 配置
 const FB_API_URL = `https://graph.facebook.com/v21.0/${process.env.FACEBOOK_PIXEL_ID}/events`;
