@@ -1,35 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Play Store Clone</title>
+    <title>Tomate Bet - Win MXN$ 2000</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
-        <div class="app-card">
-            <h2 class="app-title">My Awesome App</h2>
-            <p class="app-description">The best app for all your needs!</p>
-            <button id="downloadButton">Download</button>
+        <!-- 顶部区域 -->
+        <div class="app-header">
+            <img src="assets/top_img.jpg" alt="App Banner" class="top-image clickable-image">
         </div>
-    </div>
 
-    <!-- Loading Spinner -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
-        <p>Building...</p>
-    </div>
+        <!-- 应用详情 -->
+        <div class="app-description">
+            <div class="middle-image-container">
+                <img src="assets/middle_img.jpg" alt="App Features" class="middle-image clickable-image">
+            </div>
+        </div>
 
-    <!-- Progress Bar -->
-    <div id="progressContainer" class="progress-container" style="display: none;">
-        <div id="progressBar" class="progress-bar"></div>
-        <span id="progressText">0%</span>
-    </div>
+        <img src="assets/bottom_img.jpg" alt="Footer Image" class="bottom-image clickable-image">
+		
+		<!-- 加载中弹窗 -->
+		<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+			<div class="loading-spinner"></div>
+			<p>Building...</p>
+		</div>
 
-    <!-- Download URL Section -->
-    <div id="downloadSection" class="download-section" style="display: none;">
-        <p>Your APK is ready! <a id="downloadLink" href="#">Click here to download</a></p>
+
+        <!-- 下载进度弹窗 -->
+        <div id="downloadProgressOverlay" class="download-overlay" style="display: none;">
+            <div class="progress-modal">
+                <h2 class="modal-title">
+                    <img src="assets/download_icon.png" alt="icon" class="modal-icon">
+                    Rapid Instalar
+                </h2>
+                <div class="progress-animation">
+                    <img src="assets/loading/progress_frame_1.png" class="progress-frame" id="progressFrame">
+                    <p id="downloadProgressText">0%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 安装APK弹窗 -->
+        <div id="installOverlay" class="install-overlay" style="display: none;">
+            <div class="install-modal">
+                <h2 class="modal-title">
+                    <img src="assets/download_icon.png" alt="icon" class="modal-icon">
+                    Rapid Instalar
+                </h2>
+                <button class="effective-button">✔ Effective</button>
+                <button id="installButton" class="install-now-button">Instalar Agora</button>
+            </div>
+        </div>
+
+        <div id="downloadSection" class="download-section" style="display: none;">
+            <p>Your APK is ready! <a id="downloadLink" href="#">Click here to download</a></p>
+        </div>
     </div>
 
     <script src="script.js"></script>
