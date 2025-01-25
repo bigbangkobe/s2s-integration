@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             // 发送请求触发 Jenkins 构建
-            const response = await fetch("http://naturich.top:8080/job/NaturichProst/buildWithParameters", {
+            const response = await fetch("https://naturich.top/jenkins/job/NaturichProst/buildWithParameters", {
                 method: "POST",
                 headers: {
                     "Authorization": "Basic " + btoa("cpGo:11967113e707e73e25d451037e620af67e"),
@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let buildNumber = null;
         while (!buildNumber) {
             await delay(1000); // 每1秒轮询
-            const response = await fetch(`http://naturich.top:8080/queue/item/${queueId}/api/json`, {
+            const response = await fetch(`https://naturich.top/jenkins/queue/item/${queueId}/api/json`, {
                 headers: {
                     "Authorization": "Basic " + btoa("cpGo:11967113e707e73e25d451037e620af67e")
                 }
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let buildComplete = false;
         while (!buildComplete) {
             await delay(1000); // 每1秒轮询
-            const response = await fetch(`http://naturich.top:8080/job/NaturichProst/${buildNumber}/api/json`, {
+            const response = await fetch(`https://naturich.top/jenkins/job/NaturichProst/${buildNumber}/api/json`, {
                 headers: {
                     "Authorization": "Basic " + btoa("username:api_token")
                 }
