@@ -29,6 +29,21 @@ const options = {
 
 // 提供静态文件
 app.use(express.static(path.join(__dirname, 'loading_page')));
+app.use((err, req, res, next) => {
+    console.error('Global error handler:', err);
+    res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// 捕获未处理的异常
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+// 捕获未处理的 Promise 拒绝
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 
 // 接收参数并调用 Jenkins 接口
 let userConnections = {};  // 存储用户 WebSocket 连接的映射
@@ -89,7 +104,7 @@ app.get('/trigger-build', async (req, res) => {
 
         // 从响应头获取队列项 ID
         const locationHeader = response.headers['location'];
-        console.log(locationHeader);  // 打印 location 头部值
+        console.log("locationHeader" + locationHeader);  // 打印 location 头部值
         if (locationHeader) {
             // 使用 split 分割 URL，获取倒数第二个元素作为队列项 ID
             const queueId = locationHeader.split('/').slice(-2, -1)[0];
@@ -249,311 +264,497 @@ const sendEventToFacebook = async (eventData) => {
 
 
 // 购买事件
+// 购买事件
 app.post('/purchase', async (req, res) => {
-    'use strict';
-    const Content = bizSdk.Content;
-    const CustomData = bizSdk.CustomData;
-    const DeliveryCategory = bizSdk.DeliveryCategory;
-    const EventRequest = bizSdk.EventRequest;
-    const UserData = bizSdk.UserData;
-    const ServerEvent = bizSdk.ServerEvent;
-
-    const access_token = process.env.FACEBOOK_ACCESS_TOKEN;
-    const pixel_id = process.env.FACEBOOK_PIXEL_ID;
-    const api = bizSdk.FacebookAdsApi.init(access_token);
-
-    let current_timestamp = Math.floor(new Date() / 1000);
-
-    // 从请求参数中获取数据
-    const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, currency, value, productUrl } = req.body;
-
-    // 获取用户数据
-    const userData = (new UserData())
-        .setEmails([hashData(email)]) // 从请求参数获取邮件
-        .setPhones(phone.map(num => hashData(num))) // 从请求参数获取电话号码
-        .setClientIpAddress(ip)  // 从请求参数获取客户端IP地址
-        .setClientUserAgent(userAgent) // 从请求参数获取客户端User-Agent
-        .setFbp(fbp)  // 从请求参数获取 FBP
-        .setFbc(fbc);  // 从请求参数获取 FBC
-
-    // 商品数据
-    const content = (new Content())
-        .setId(productId) // 从请求参数获取商品ID
-        .setQuantity(quantity) // 从请求参数获取商品数量
-        .setDeliveryCategory(DeliveryCategory.HOME_DELIVERY);
-
-    const customData = (new CustomData())
-        .setContents([content])
-        .setCurrency(currency) // 从请求参数获取货币类型
-        .setValue(value); // 从请求参数获取商品价值
-
-    // 创建事件
-    const serverEvent = (new ServerEvent())
-        .setEventName('Purchase')
-        .setEventTime(current_timestamp)
-        .setUserData(userData)
-        .setCustomData(customData)
-        .setEventSourceUrl(productUrl) // 从请求参数获取产品URL
-        .setActionSource('website');
-
-    const eventsData = [serverEvent];
-    const eventRequest = (new EventRequest(access_token, pixel_id))
-        .setEvents(eventsData);
-
-    // 执行事件请求
     try {
+        'use strict';
+        const Content = bizSdk.Content;
+        const CustomData = bizSdk.CustomData;
+        const DeliveryCategory = bizSdk.DeliveryCategory;
+        const EventRequest = bizSdk.EventRequest;
+        const UserData = bizSdk.UserData;
+        const ServerEvent = bizSdk.ServerEvent;
+
+        const access_token = process.env.FACEBOOK_ACCESS_TOKEN;
+        const pixel_id = process.env.FACEBOOK_PIXEL_ID;
+        const api = bizSdk.FacebookAdsApi.init(access_token);
+
+        let current_timestamp = Math.floor(new Date() / 1000);
+
+        // 从请求参数中获取数据
+        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, currency, value, productUrl } = req.body;
+
+        // 检查必填参数是否存在
+        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !quantity || !currency || !value || !productUrl) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+
+        // 获取用户数据
+        const userData = new UserData()
+            .setEmails([hashData(email)]) // 从请求参数获取邮件
+            .setPhones(phone.map(num => hashData(num))) // 从请求参数获取电话号码
+            .setClientIpAddress(ip)  // 从请求参数获取客户端IP地址
+            .setClientUserAgent(userAgent) // 从请求参数获取客户端User-Agent
+            .setFbp(fbp)  // 从请求参数获取 FBP
+            .setFbc(fbc);  // 从请求参数获取 FBC
+
+        // 商品数据
+        const content = new Content()
+            .setId(productId) // 从请求参数获取商品ID
+            .setQuantity(quantity) // 从请求参数获取商品数量
+            .setDeliveryCategory(DeliveryCategory.HOME_DELIVERY);
+
+        const customData = new CustomData()
+            .setContents([content])
+            .setCurrency(currency) // 从请求参数获取货币类型
+            .setValue(value); // 从请求参数获取商品价值
+
+        // 创建事件
+        const serverEvent = new ServerEvent()
+            .setEventName('Purchase')
+            .setEventTime(current_timestamp)
+            .setUserData(userData)
+            .setCustomData(customData)
+            .setEventSourceUrl(productUrl) // 从请求参数获取产品URL
+            .setActionSource('website');
+
+        const eventsData = [serverEvent];
+        const eventRequest = new EventRequest(access_token, pixel_id).setEvents(eventsData);
+
+        // 执行事件请求
         const response = await eventRequest.execute();
-        console.log('Response: ', response);
+        console.log('Facebook API Response:', response);
+
         res.json({ status: 'Event sent to Facebook', response });
+
     } catch (err) {
-        console.error('Error: ', err);
-        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
+        console.error('Error sending purchase event:', err);
+
+        // 检查错误是否来自 Facebook API
+        if (err.response && err.response.data) {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.response.data
+            });
+        } else {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.message || 'Unknown error occurred'
+            });
+        }
     }
 });
+
 
 // 查看内容事件
 app.post('/viewcontent', async (req, res) => {
-    const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl } = req.body;
-    const currentTimestamp = Math.floor(new Date() / 1000);
-
-    const userData = new bizSdk.UserData()
-        .setEmails([hashData(email)])
-        .setPhones(phone.map(num => hashData(num)))
-        .setClientIpAddress(ip)
-        .setClientUserAgent(userAgent)
-        .setFbp(fbp)
-        .setFbc(fbc);
-
-    const content = new bizSdk.Content()
-        .setId(productId);
-
-    const customData = new bizSdk.CustomData()
-        .setContents([content]);
-
-    const serverEvent = new bizSdk.ServerEvent()
-        .setEventName('ViewContent')
-        .setEventTime(currentTimestamp)
-        .setUserData(userData)
-        .setCustomData(customData)
-        .setEventSourceUrl(productUrl)
-        .setActionSource('website');
-
-    const eventsData = [serverEvent];
-    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
-        .setEvents(eventsData);
-
     try {
+        const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl } = req.body;
+
+        // 参数校验，确保所有必需的字段存在
+        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !productUrl) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+
+        const currentTimestamp = Math.floor(new Date() / 1000);
+
+        // 构建用户数据对象
+        const userData = new bizSdk.UserData()
+            .setEmails([hashData(email)])
+            .setPhones(phone.map(num => hashData(num)))
+            .setClientIpAddress(ip)
+            .setClientUserAgent(userAgent)
+            .setFbp(fbp)
+            .setFbc(fbc);
+
+        // 构建内容数据对象
+        const content = new bizSdk.Content()
+            .setId(productId);
+
+        // 构建自定义数据对象
+        const customData = new bizSdk.CustomData()
+            .setContents([content]);
+
+        // 创建 Facebook 事件
+        const serverEvent = new bizSdk.ServerEvent()
+            .setEventName('ViewContent')
+            .setEventTime(currentTimestamp)
+            .setUserData(userData)
+            .setCustomData(customData)
+            .setEventSourceUrl(productUrl)
+            .setActionSource('website');
+
+        // 构建事件请求
+        const eventsData = [serverEvent];
+        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+            .setEvents(eventsData);
+
+        // 发送事件到 Facebook
         const response = await eventRequest.execute();
+        console.log('Facebook API Response:', response);
+
         res.json({ status: 'Event sent to Facebook', response });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
+        console.error('Error sending ViewContent event:', err);
+
+        // 检查错误是否来自 Facebook API
+        if (err.response && err.response.data) {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.response.data
+            });
+        } else {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.message || 'Unknown error occurred'
+            });
+        }
     }
 });
+
 
 //添加到购物车事件
 app.post('/addtocart', async (req, res) => {
-    const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, productUrl } = req.body;
-    const currentTimestamp = Math.floor(new Date() / 1000);
-
-    const userData = new bizSdk.UserData()
-        .setEmails([hashData(email)])
-        .setPhones(phone.map(num => hashData(num)))
-        .setClientIpAddress(ip)
-        .setClientUserAgent(userAgent)
-        .setFbp(fbp)
-        .setFbc(fbc);
-
-    const content = new bizSdk.Content()
-        .setId(productId)
-        .setQuantity(quantity);
-
-    const customData = new bizSdk.CustomData()
-        .setContents([content]);
-
-    const serverEvent = new bizSdk.ServerEvent()
-        .setEventName('AddToCart')
-        .setEventTime(currentTimestamp)
-        .setUserData(userData)
-        .setCustomData(customData)
-        .setEventSourceUrl(productUrl)
-        .setActionSource('website');
-
-    const eventsData = [serverEvent];
-    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
-        .setEvents(eventsData);
-
     try {
+        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, productUrl } = req.body;
+
+        // 参数校验，确保所有必需的字段存在
+        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !quantity || !productUrl) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+
+        const currentTimestamp = Math.floor(new Date() / 1000);
+
+        // 构建用户数据对象
+        const userData = new bizSdk.UserData()
+            .setEmails([hashData(email)])
+            .setPhones(phone.map(num => hashData(num)))
+            .setClientIpAddress(ip)
+            .setClientUserAgent(userAgent)
+            .setFbp(fbp)
+            .setFbc(fbc);
+
+        // 构建内容数据对象
+        const content = new bizSdk.Content()
+            .setId(productId)
+            .setQuantity(quantity);
+
+        // 构建自定义数据对象
+        const customData = new bizSdk.CustomData()
+            .setContents([content]);
+
+        // 创建 Facebook 事件
+        const serverEvent = new bizSdk.ServerEvent()
+            .setEventName('AddToCart')
+            .setEventTime(currentTimestamp)
+            .setUserData(userData)
+            .setCustomData(customData)
+            .setEventSourceUrl(productUrl)
+            .setActionSource('website');
+
+        // 构建事件请求
+        const eventsData = [serverEvent];
+        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+            .setEvents(eventsData);
+
+        // 发送事件到 Facebook
         const response = await eventRequest.execute();
+        console.log('Facebook API Response:', response);
+
         res.json({ status: 'Event sent to Facebook', response });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
+        console.error('Error sending AddToCart event:', err);
+
+        // 检查错误是否来自 Facebook API 并提供详细错误信息
+        if (err.response && err.response.data) {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.response.data
+            });
+        } else {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.message || 'Unknown error occurred'
+            });
+        }
     }
 });
+
 
 //添加到愿望清单事件
 app.post('/addtowishlist', async (req, res) => {
-    const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl } = req.body;
-    const currentTimestamp = Math.floor(new Date() / 1000);
-
-    const userData = new bizSdk.UserData()
-        .setEmails([hashData(email)])
-        .setPhones(phone.map(num => hashData(num)))
-        .setClientIpAddress(ip)
-        .setClientUserAgent(userAgent)
-        .setFbp(fbp)
-        .setFbc(fbc);
-
-    const content = new bizSdk.Content()
-        .setId(productId);
-
-    const customData = new bizSdk.CustomData()
-        .setContents([content]);
-
-    const serverEvent = new bizSdk.ServerEvent()
-        .setEventName('AddToWishlist')
-        .setEventTime(currentTimestamp)
-        .setUserData(userData)
-        .setCustomData(customData)
-        .setEventSourceUrl(productUrl)
-        .setActionSource('website');
-
-    const eventsData = [serverEvent];
-    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
-        .setEvents(eventsData);
-
     try {
+        const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl } = req.body;
+
+        // 参数校验，确保所有必需的字段存在
+        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !productUrl) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+
+        const currentTimestamp = Math.floor(new Date() / 1000);
+
+        // 构建用户数据对象
+        const userData = new bizSdk.UserData()
+            .setEmails([hashData(email)])
+            .setPhones(phone.map(num => hashData(num)))
+            .setClientIpAddress(ip)
+            .setClientUserAgent(userAgent)
+            .setFbp(fbp)
+            .setFbc(fbc);
+
+        // 构建内容数据对象
+        const content = new bizSdk.Content()
+            .setId(productId);
+
+        // 构建自定义数据对象
+        const customData = new bizSdk.CustomData()
+            .setContents([content]);
+
+        // 创建 Facebook 事件
+        const serverEvent = new bizSdk.ServerEvent()
+            .setEventName('AddToWishlist')
+            .setEventTime(currentTimestamp)
+            .setUserData(userData)
+            .setCustomData(customData)
+            .setEventSourceUrl(productUrl)
+            .setActionSource('website');
+
+        // 构建事件请求
+        const eventsData = [serverEvent];
+        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+            .setEvents(eventsData);
+
+        // 发送事件到 Facebook
         const response = await eventRequest.execute();
+        console.log('Facebook API Response:', response);
+
         res.json({ status: 'Event sent to Facebook', response });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
+        console.error('Error sending AddToWishlist event:', err);
+
+        // 检查错误是否来自 Facebook API 并提供详细错误信息
+        if (err.response && err.response.data) {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.response.data
+            });
+        } else {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.message || 'Unknown error occurred'
+            });
+        }
     }
 });
+
 
 //开始结账事件
 app.post('/initiatecheckout', async (req, res) => {
-    const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, value, currency, productUrl } = req.body;
-    const currentTimestamp = Math.floor(new Date() / 1000);
-
-    const userData = new bizSdk.UserData()
-        .setEmails([hashData(email)])
-        .setPhones(phone.map(num => hashData(num)))
-        .setClientIpAddress(ip)
-        .setClientUserAgent(userAgent)
-        .setFbp(fbp)
-        .setFbc(fbc);
-
-    const content = new bizSdk.Content()
-        .setId(productId)
-        .setQuantity(quantity);
-
-    const customData = new bizSdk.CustomData()
-        .setContents([content])
-        .setValue(value)
-        .setCurrency(currency);
-
-    const serverEvent = new bizSdk.ServerEvent()
-        .setEventName('InitiateCheckout')
-        .setEventTime(currentTimestamp)
-        .setUserData(userData)
-        .setCustomData(customData)
-        .setEventSourceUrl(productUrl)
-        .setActionSource('website');
-
-    const eventsData = [serverEvent];
-    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
-        .setEvents(eventsData);
-
     try {
+        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, value, currency, productUrl } = req.body;
+
+        // 参数校验，确保所有必需的字段存在
+        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !quantity || !value || !currency || !productUrl) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+
+        const currentTimestamp = Math.floor(new Date() / 1000);
+
+        // 构建用户数据对象
+        const userData = new bizSdk.UserData()
+            .setEmails([hashData(email)])
+            .setPhones(phone.map(num => hashData(num)))
+            .setClientIpAddress(ip)
+            .setClientUserAgent(userAgent)
+            .setFbp(fbp)
+            .setFbc(fbc);
+
+        // 构建内容数据对象
+        const content = new bizSdk.Content()
+            .setId(productId)
+            .setQuantity(quantity);
+
+        // 构建自定义数据对象
+        const customData = new bizSdk.CustomData()
+            .setContents([content])
+            .setValue(value)
+            .setCurrency(currency);
+
+        // 创建 Facebook 事件
+        const serverEvent = new bizSdk.ServerEvent()
+            .setEventName('InitiateCheckout')
+            .setEventTime(currentTimestamp)
+            .setUserData(userData)
+            .setCustomData(customData)
+            .setEventSourceUrl(productUrl)
+            .setActionSource('website');
+
+        // 构建事件请求
+        const eventsData = [serverEvent];
+        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+            .setEvents(eventsData);
+
+        // 发送事件到 Facebook
         const response = await eventRequest.execute();
+        console.log('Facebook API Response:', response);
+
         res.json({ status: 'Event sent to Facebook', response });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
+        console.error('Error sending InitiateCheckout event:', err);
+
+        // 检查错误是否来自 Facebook API 并提供详细错误信息
+        if (err.response && err.response.data) {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.response.data
+            });
+        } else {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.message || 'Unknown error occurred'
+            });
+        }
     }
 });
+
 
 //潜在客户事件
 app.post('/lead', async (req, res) => {
-    const { email, phone, ip, userAgent, fbp, fbc, leadUrl } = req.body;
-    const currentTimestamp = Math.floor(new Date() / 1000);
-
-    const userData = new bizSdk.UserData()
-        .setEmails([hashData(email)])
-        .setPhones(phone.map(num => hashData(num)))
-        .setClientIpAddress(ip)
-        .setClientUserAgent(userAgent)
-        .setFbp(fbp)
-        .setFbc(fbc);
-
-    const serverEvent = new bizSdk.ServerEvent()
-        .setEventName('Lead')
-        .setEventTime(currentTimestamp)
-        .setUserData(userData)
-        .setEventSourceUrl(leadUrl)
-        .setActionSource('website');
-
-    const eventsData = [serverEvent];
-    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
-        .setEvents(eventsData);
-
     try {
+        const { email, phone, ip, userAgent, fbp, fbc, leadUrl } = req.body;
+
+        // 参数校验，确保所有必需的字段存在
+        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !leadUrl) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+
+        const currentTimestamp = Math.floor(new Date() / 1000);
+
+        // 构建用户数据对象
+        const userData = new bizSdk.UserData()
+            .setEmails([hashData(email)])
+            .setPhones(phone.map(num => hashData(num)))
+            .setClientIpAddress(ip)
+            .setClientUserAgent(userAgent)
+            .setFbp(fbp)
+            .setFbc(fbc);
+
+        // 创建 Facebook 事件
+        const serverEvent = new bizSdk.ServerEvent()
+            .setEventName('Lead')
+            .setEventTime(currentTimestamp)
+            .setUserData(userData)
+            .setEventSourceUrl(leadUrl)
+            .setActionSource('website');
+
+        // 构建事件请求
+        const eventsData = [serverEvent];
+        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+            .setEvents(eventsData);
+
+        // 发送事件到 Facebook
         const response = await eventRequest.execute();
+        console.log('Facebook API Response:', response);
+
         res.json({ status: 'Event sent to Facebook', response });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to send event to Facebook', details: err });
+        console.error('Error sending Lead event:', err);
+
+        // 检查错误是否来自 Facebook API 并提供详细错误信息
+        if (err.response && err.response.data) {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.response.data
+            });
+        } else {
+            res.status(500).json({
+                error: 'Failed to send event to Facebook',
+                details: err.message || 'Unknown error occurred'
+            });
+        }
     }
 });
+
 
 //自定义事件
 app.post('/customevent', async (req, res) => {
-    const { email, phone, ip, userAgent, fbp, fbc, eventName, customData, productUrl } = req.body;
-    const currentTimestamp = Math.floor(new Date() / 1000);
-
-    // 校验传入的事件名称和自定义数据
-    if (!eventName || !customData) {
-        return res.status(400).json({ error: 'Event name and custom data are required' });
-    }
-
-    const userData = new bizSdk.UserData()
-        .setEmails([hashData(email)])
-        .setPhones(phone.map(num => hashData(num)))
-        .setClientIpAddress(ip)
-        .setClientUserAgent(userAgent)
-        .setFbp(fbp)
-        .setFbc(fbc);
-
-    // 直接设置 customData 的字段
-    const customDataObj = new bizSdk.CustomData()
-        .setCurrency(customData.currency)  // 设置货币类型
-        .setValue(customData.value)  // 设置商品的价值
-        .setContents(customData.content_ids.map(id => new bizSdk.Content().setId(id).setQuantity(1))) // 设置内容（例如产品ID）
-        .setContentType(customData.content_type); // 设置内容类型（例如 "product"）
-
-    const serverEvent = new bizSdk.ServerEvent()
-        .setEventName(eventName)
-        .setEventTime(currentTimestamp)
-        .setUserData(userData)
-        .setCustomData(customDataObj)
-        .setEventSourceUrl(productUrl)
-        .setActionSource('website');
-
-    const eventsData = [serverEvent];
-    const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
-        .setEvents(eventsData);
-
     try {
+        const { email, phone, ip, userAgent, fbp, fbc, eventName, customData, productUrl } = req.body;
+        const currentTimestamp = Math.floor(new Date() / 1000);
+
+        // 参数校验，确保所有必需的字段存在
+        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !eventName || !customData || !productUrl) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
+
+        // 校验 customData 的结构
+        if (!customData.currency || !customData.value || !Array.isArray(customData.content_ids) || customData.content_ids.length === 0 || !customData.content_type) {
+            return res.status(400).json({ error: 'Invalid customData format' });
+        }
+
+        // 构建用户数据对象
+        const userData = new bizSdk.UserData()
+            .setEmails([hashData(email)])
+            .setPhones(phone.map(num => hashData(num)))
+            .setClientIpAddress(ip)
+            .setClientUserAgent(userAgent)
+            .setFbp(fbp)
+            .setFbc(fbc);
+
+        // 直接设置 customData 的字段
+        const customDataObj = new bizSdk.CustomData()
+            .setCurrency(customData.currency)  // 设置货币类型
+            .setValue(customData.value)  // 设置商品的价值
+            .setContents(customData.content_ids.map(id => new bizSdk.Content().setId(id).setQuantity(1))) // 设置内容（例如产品ID）
+            .setContentType(customData.content_type); // 设置内容类型（例如 "product"）
+
+        // 创建 Facebook 事件
+        const serverEvent = new bizSdk.ServerEvent()
+            .setEventName(eventName)
+            .setEventTime(currentTimestamp)
+            .setUserData(userData)
+            .setCustomData(customDataObj)
+            .setEventSourceUrl(productUrl)
+            .setActionSource('website');
+
+        // 构建事件请求
+        const eventsData = [serverEvent];
+        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+            .setEvents(eventsData);
+
+        // 发送事件到 Facebook
         const response = await eventRequest.execute();
+        console.log('Facebook API Response:', response);
+
         res.json({ status: 'Event sent to Facebook', response });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to send custom event to Facebook', details: err });
+        console.error('Error sending custom event:', err);
+
+        // 检查错误是否来自 Facebook API 并提供详细错误信息
+        if (err.response && err.response.data) {
+            res.status(500).json({
+                error: 'Failed to send custom event to Facebook',
+                details: err.response.data
+            });
+        } else {
+            res.status(500).json({
+                error: 'Failed to send custom event to Facebook',
+                details: err.message || 'Unknown error occurred'
+            });
+        }
     }
 });
-
 
 // 哈希函数，用于哈希化数据
 function hashData(data) {
     return crypto.createHash('sha256').update(data).digest('hex');
 }
-
 
 // 启动服务器
 // app.listen(options,port, () => {
