@@ -268,27 +268,31 @@ const sendEventToFacebook = async (eventData) => {
 app.post('/purchase', async (req, res) => {
     try {
         'use strict';
+
+       
+
+        let current_timestamp = Math.floor(new Date() / 1000);
+
+        // 从请求参数中获取数据
+        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, currency, value, productUrl,access_token,pixel_id } = req.body;
+
+        if(!access_token){
+            return res.status(400).json({ error: 'Missing access_token' });
+        }
+        if(!pixel_id){
+            return res.status(400).json({ error: 'Missing pixel_id' });
+        }
+        // 检查必填参数是否存在
+        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !quantity || !currency || !value || !productUrl) {
+            return res.status(400).json({ error: 'Missing required parameters' });
+        }
         const Content = bizSdk.Content;
         const CustomData = bizSdk.CustomData;
         const DeliveryCategory = bizSdk.DeliveryCategory;
         const EventRequest = bizSdk.EventRequest;
         const UserData = bizSdk.UserData;
         const ServerEvent = bizSdk.ServerEvent;
-
-        const access_token = process.env.FACEBOOK_ACCESS_TOKEN;
-        const pixel_id = process.env.FACEBOOK_PIXEL_ID;
         const api = bizSdk.FacebookAdsApi.init(access_token);
-
-        let current_timestamp = Math.floor(new Date() / 1000);
-
-        // 从请求参数中获取数据
-        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, currency, value, productUrl } = req.body;
-
-        // 检查必填参数是否存在
-        if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !quantity || !currency || !value || !productUrl) {
-            return res.status(400).json({ error: 'Missing required parameters' });
-        }
-
         // 获取用户数据
         const userData = new UserData()
             .setEmails([hashData(email)]) // 从请求参数获取邮件
@@ -349,8 +353,14 @@ app.post('/purchase', async (req, res) => {
 // 查看内容事件
 app.post('/viewcontent', async (req, res) => {
     try {
-        const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl } = req.body;
+        const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl,access_token,pixel_id } = req.body;
 
+        if(!access_token){
+            return res.status(400).json({ error: 'Missing access_token' });
+        }
+        if(!pixel_id){
+            return res.status(400).json({ error: 'Missing pixel_id' });
+        }
         // 参数校验，确保所有必需的字段存在
         if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !productUrl) {
             return res.status(400).json({ error: 'Missing required parameters' });
@@ -386,7 +396,7 @@ app.post('/viewcontent', async (req, res) => {
 
         // 构建事件请求
         const eventsData = [serverEvent];
-        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        const eventRequest = new bizSdk.EventRequest(access_token, pixel_id)
             .setEvents(eventsData);
 
         // 发送事件到 Facebook
@@ -417,8 +427,13 @@ app.post('/viewcontent', async (req, res) => {
 //添加到购物车事件
 app.post('/addtocart', async (req, res) => {
     try {
-        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, productUrl } = req.body;
-
+        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, productUrl,access_token,pixel_id } = req.body;
+        if(!access_token){
+            return res.status(400).json({ error: 'Missing access_token' });
+        }
+        if(!pixel_id){
+            return res.status(400).json({ error: 'Missing pixel_id' });
+        }
         // 参数校验，确保所有必需的字段存在
         if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !quantity || !productUrl) {
             return res.status(400).json({ error: 'Missing required parameters' });
@@ -455,7 +470,7 @@ app.post('/addtocart', async (req, res) => {
 
         // 构建事件请求
         const eventsData = [serverEvent];
-        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        const eventRequest = new bizSdk.EventRequest(access_token, pixel_id)
             .setEvents(eventsData);
 
         // 发送事件到 Facebook
@@ -486,8 +501,13 @@ app.post('/addtocart', async (req, res) => {
 //添加到愿望清单事件
 app.post('/addtowishlist', async (req, res) => {
     try {
-        const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl } = req.body;
-
+        const { email, phone, ip, userAgent, fbp, fbc, productId, productUrl,access_token,pixel_id } = req.body;
+        if(!access_token){
+            return res.status(400).json({ error: 'Missing access_token' });
+        }
+        if(!pixel_id){
+            return res.status(400).json({ error: 'Missing pixel_id' });
+        }
         // 参数校验，确保所有必需的字段存在
         if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !productUrl) {
             return res.status(400).json({ error: 'Missing required parameters' });
@@ -523,7 +543,7 @@ app.post('/addtowishlist', async (req, res) => {
 
         // 构建事件请求
         const eventsData = [serverEvent];
-        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        const eventRequest = new bizSdk.EventRequest(access_token, pixel_id)
             .setEvents(eventsData);
 
         // 发送事件到 Facebook
@@ -554,8 +574,13 @@ app.post('/addtowishlist', async (req, res) => {
 //开始结账事件
 app.post('/initiatecheckout', async (req, res) => {
     try {
-        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, value, currency, productUrl } = req.body;
-
+        const { email, phone, ip, userAgent, fbp, fbc, productId, quantity, value, currency, productUrl,access_token,pixel_id } = req.body;
+        if(!access_token){
+            return res.status(400).json({ error: 'Missing access_token' });
+        }
+        if(!pixel_id){
+            return res.status(400).json({ error: 'Missing pixel_id' });
+        }
         // 参数校验，确保所有必需的字段存在
         if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !productId || !quantity || !value || !currency || !productUrl) {
             return res.status(400).json({ error: 'Missing required parameters' });
@@ -594,7 +619,7 @@ app.post('/initiatecheckout', async (req, res) => {
 
         // 构建事件请求
         const eventsData = [serverEvent];
-        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        const eventRequest = new bizSdk.EventRequest(access_token, pixel_id)
             .setEvents(eventsData);
 
         // 发送事件到 Facebook
@@ -625,8 +650,13 @@ app.post('/initiatecheckout', async (req, res) => {
 //潜在客户事件
 app.post('/lead', async (req, res) => {
     try {
-        const { email, phone, ip, userAgent, fbp, fbc, leadUrl } = req.body;
-
+        const { email, phone, ip, userAgent, fbp, fbc, leadUrl,access_token,pixel_id } = req.body;
+        if(!access_token){
+            return res.status(400).json({ error: 'Missing access_token' });
+        }
+        if(!pixel_id){
+            return res.status(400).json({ error: 'Missing pixel_id' });
+        }
         // 参数校验，确保所有必需的字段存在
         if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !leadUrl) {
             return res.status(400).json({ error: 'Missing required parameters' });
@@ -653,7 +683,7 @@ app.post('/lead', async (req, res) => {
 
         // 构建事件请求
         const eventsData = [serverEvent];
-        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        const eventRequest = new bizSdk.EventRequest(access_token, pixel_id)
             .setEvents(eventsData);
 
         // 发送事件到 Facebook
@@ -684,9 +714,14 @@ app.post('/lead', async (req, res) => {
 //自定义事件
 app.post('/customevent', async (req, res) => {
     try {
-        const { email, phone, ip, userAgent, fbp, fbc, eventName, customData, productUrl } = req.body;
+        const { email, phone, ip, userAgent, fbp, fbc, eventName, customData, productUrl,access_token,pixel_id } = req.body;
         const currentTimestamp = Math.floor(new Date() / 1000);
-
+        if(!access_token){
+            return res.status(400).json({ error: 'Missing access_token' });
+        }
+        if(!pixel_id){
+            return res.status(400).json({ error: 'Missing pixel_id' });
+        }
         // 参数校验，确保所有必需的字段存在
         if (!email || !phone || !ip || !userAgent || !fbp || !fbc || !eventName || !customData || !productUrl) {
             return res.status(400).json({ error: 'Missing required parameters' });
@@ -724,7 +759,7 @@ app.post('/customevent', async (req, res) => {
 
         // 构建事件请求
         const eventsData = [serverEvent];
-        const eventRequest = new bizSdk.EventRequest(process.env.FACEBOOK_ACCESS_TOKEN, process.env.FACEBOOK_PIXEL_ID)
+        const eventRequest = new bizSdk.EventRequest(access_token, pixel_id)
             .setEvents(eventsData);
 
         // 发送事件到 Facebook
