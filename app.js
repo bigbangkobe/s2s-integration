@@ -796,6 +796,9 @@ function hashData(data) {
 //     console.log(`Server is running on http://0.0.0.0:${port}`);
 // });
 // 创建 HTTPS 服务器并监听 443 端口
-server.listen(port, () => {
-    console.log(`Server is running on http://0.0.0.0:${port}`);
+// server.listen(port, () => {
+//     console.log(`Server is running on http://0.0.0.0:${port}`);
+// });
+server.listen(port, '127.0.0.1', () => {
+    console.log(`Server is running on http://127.0.0.1:${port}`);
 });
