@@ -5,6 +5,7 @@ const bizSdk = require('facebook-nodejs-business-sdk');
 const crypto = require('crypto');
 const cors = require('cors');
 const https = require('https');
+const http = require('http'); // ✅ 加上这行
 const fs = require('fs');
 const WebSocket = require('ws');
 const path = require('path');  // 导入 path 模块
