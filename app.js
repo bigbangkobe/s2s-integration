@@ -97,7 +97,7 @@ app.get('/trigger-build', async (req, res) => {
                 },
                 auth: {
                     username: 'cpGo',
-                    password: '11967113e707e73e25d451037e620af67e'  // 用你的 API token 替代
+                    password: '119bbd1250184c1490dd201daa089f9a15'  // 用你的 API token 替代
                 }
             }
         );
@@ -136,7 +136,7 @@ app.get('/trigger-build', async (req, res) => {
                 {
                     auth: {
                         username: 'cpGo',
-                        password: '11967113e707e73e25d451037e620af67e'  // 用你的 API token 替代
+                        password: '119bbd1250184c1490dd201daa089f9a15'  // 用你的 API token 替代
                     }
                 }
             );
@@ -174,7 +174,7 @@ app.get('/trigger-build', async (req, res) => {
                 {
                     auth: {
                         username: 'cpGo',
-                        password: '11967113e707e73e25d451037e620af67e'  // 用你的 API token 替代
+                        password: '119bbd1250184c1490dd201daa089f9a15'  // 用你的 API token 替代
                     }
                 }
             );

@@ -17,8 +17,8 @@ const EventRequest = bizSdk.EventRequest;
 const UserData = bizSdk.UserData;
 const ServerEvent = bizSdk.ServerEvent;
 
-const pixel_id = '2308431256185244';
-const access_token = 'EAAIbTfDR474BOyQtlGJ7bpb6ZBWJW52WKOWJsvxMoUaiXSeikN0DVMbplTnNr0saT4b1UhtFEiWgBjQiMdjF2ZC4GngpFH4XsJPbHTCZAdofmgfThRI8RYt5691AkYt8fAZCitBUaDlJEkZBpOowApEJTq7EBZBj6OWoczqXJIHaeYN5I72ZCkHUosCBpsXbQZAuowZDZD';
+const pixel_id = '738386435350741';
+const access_token = 'EAAKmU5O9wZA0BPA416xBtlIFYCUDhjg0QWkZBuxbMqt1dlSIv2o4lSleZACmoHyTK6MTvO1vCYaUzjdlzW9EVgwDdqaUkkXpSwfsjEi7ZBWOzBHFF7xW4L38lhLiV7olpw5AKCZC6M1vzBCbUe6v2XOZAn7kyzvF6zXnaZA6NuQuGXVbWhasLZBvvg0UUxOZArIPrvQZDZD';
 const api = bizSdk.FacebookAdsApi.init(access_token);
 
 let current_timestamp = Math.floor(new Date() / 1000);
