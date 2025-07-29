@@ -56,8 +56,10 @@ app.get('/generate-session-id', (req, res) => {
 });
 
 // 创建 HTTPS 服务器
-const server = https.createServer(options, app);
-// 启动 WebSocket 服务器并绑定到 HTTPS 服务器
+// const server = https.createServer(options, app);
+// // 启动 WebSocket 服务器并绑定到 HTTPS 服务器
+// const wss = new WebSocket.Server({ server });
+const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws, req) => {
@@ -799,6 +801,10 @@ function hashData(data) {
 // server.listen(port, () => {
 //     console.log(`Server is running on http://0.0.0.0:${port}`);
 // });
+// server.listen(port, '127.0.0.1', () => {
+//     console.log(`Server is running on http://127.0.0.1:${port}`);
+// });
+
 server.listen(port, '127.0.0.1', () => {
-    console.log(`Server is running on http://127.0.0.1:${port}`);
+    console.log(`HTTP Server is running on http://127.0.0.1:${port}`);
 });
