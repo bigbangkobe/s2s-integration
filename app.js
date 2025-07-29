@@ -22,8 +22,8 @@ app.use(cors());
 const FB_API_URL = `https://graph.facebook.com/v21.0/${process.env.FACEBOOK_PIXEL_ID}/events`;
 // 加载 SSL 证书和私钥
 const options = {
-    key: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/naturich.top.key'), // 私钥文件路径
-    cert: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/naturich.top.pem'), // 证书文件路径
+    // key: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/naturich.top.key'), // 私钥文件路径
+    // cert: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/naturich.top.pem'), // 证书文件路径
     //ca: fs.readFileSync('/home/s2s-integration/16929102_naturich.top_other/ca_bundle.crt') // 如果有 CA Bundle，指定路径
 };
 
